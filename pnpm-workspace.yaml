@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  "@parcel/watcher": true
+  vue-demi: true
+  sharp: true
+  msgpackr-extract: true
+  workerd: true
+catalog:
+  dotenv: ^17.4.2
+  zod: ^4.4.3
+  typescript: ^6.0.3
+  "@types/node": ^26.2.0
+  convex: ^1.45.0

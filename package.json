@@ -1,0 +1,43 @@
+{
+  "name": "tennis-buddy-finder",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vp run -r dev",
+    "build": "vp run -r build",
+    "check-types": "vp run -r check-types",
+    "check": "oxlint && oxfmt --write",
+    "lint": "vp lint",
+    "format": "vp fmt",
+    "staged": "vp staged",
+    "hooks:setup": "vp config",
+    "dev:web": "vp run --filter web dev:bare",
+    "dev:server": "vp run --filter @tennis-buddy-finder/backend dev",
+    "dev:setup": "vp run --filter @tennis-buddy-finder/backend dev:setup",
+    "deploy": "vp run --filter @tennis-buddy-finder/infra deploy",
+    "destroy": "vp run --filter @tennis-buddy-finder/infra destroy"
+  },
+  "dependencies": {
+    "@tennis-buddy-finder/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260728.1",
+    "@tennis-buddy-finder/config": "workspace:*",
+    "@types/node": "catalog:",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.80.0",
+    "rolldown": "1.2.6",
+    "typescript": "catalog:",
+    "vite-plus": "0.3.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0"
+  },
+  "packageManager": "pnpm@11.15.1"
+}

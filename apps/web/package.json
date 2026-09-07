@@ -1,0 +1,34 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "check-types": "nuxt typecheck",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "dev:bare": "nuxt dev"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.10.0",
+    "@tennis-buddy-finder/backend": "workspace:*",
+    "@tennis-buddy-finder/env": "workspace:*",
+    "convex": "catalog:",
+    "convex-nuxt": "0.1.5",
+    "convex-vue": "^0.1.5",
+    "dotenv": "catalog:",
+    "nuxt": "^4.5.1",
+    "vue": "^3.5.40",
+    "vue-router": "^5.2.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@alchemy.run/frontend-frameworks": "2.0.0-beta.75",
+    "@iconify-json/lucide": "^1.2.120",
+    "@tennis-buddy-finder/config": "workspace:*",
+    "tailwindcss": "^4.3.3",
+    "typescript": "catalog:",
+    "vue-tsc": "^3.3.8"
+  }
+}

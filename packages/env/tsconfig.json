@@ -1,0 +1,3 @@
+{
+  "extends": "@tennis-buddy-finder/config/tsconfig.base.json"
+}
