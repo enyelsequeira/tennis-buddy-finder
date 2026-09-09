@@ -1,2 +1,67 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* Hard Court palette. See docs/superpowers/specs/2026-09-08-tennis-buddy-finder-visual-design.md */
+@theme static {
+  --font-display: "Bricolage Grotesque", "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* court: the blue of the playing surface */
+  --color-court-50: #eff5fb;
+  --color-court-100: #dce9f6;
+  --color-court-200: #b4cdea;
+  --color-court-300: #7faad9;
+  --color-court-400: #4f8ac7;
+  --color-court-500: #2f6fb3;
+  --color-court-600: #25598f;
+  --color-court-700: #1f4a75;
+  --color-court-800: #1b3d5f;
+  --color-court-900: #16314d;
+  --color-court-950: #0e1f33;
+
+  /* surround: the green around the court */
+  --color-surround-50: #eef7f2;
+  --color-surround-100: #d6ecdf;
+  --color-surround-200: #aedac2;
+  --color-surround-300: #7cc09d;
+  --color-surround-400: #4e9e78;
+  --color-surround-500: #2e7d5b;
+  --color-surround-600: #246549;
+  --color-surround-700: #1e523c;
+  --color-surround-800: #1a4232;
+  --color-surround-900: #16372a;
+  --color-surround-950: #0b1f17;
+
+  /* ball: optic yellow, painted only on an open slot */
+  --color-ball-50: #fafee6;
+  --color-ball-100: #f6fbd3;
+  --color-ball-200: #edf8a3;
+  --color-ball-300: #e4f56b;
+  --color-ball-400: #ddf43c;
+  --color-ball-500: #d9f21b;
+  --color-ball-600: #b8cf0d;
+  --color-ball-700: #8e9f0c;
+  --color-ball-800: #6b7a0a;
+  --color-ball-900: #55600f;
+  --color-ball-950: #2e3505;
+}
+
+:root {
+  --ui-radius: 0.375rem;
+  --ui-container: 72rem;
+
+  /* Page is slate-50, cards sit on it as white. */
+  --ui-bg: var(--ui-color-neutral-50);
+  --ui-bg-elevated: var(--color-white);
+}
+
+.dark {
+  --ui-bg: var(--ui-color-neutral-950);
+  --ui-bg-elevated: var(--ui-color-neutral-900);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

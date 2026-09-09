@@ -5,18 +5,19 @@ with nearby). It is a thin client over the Convex backend in `packages/backend`;
 and business logic live in Convex functions, this app renders and calls them.
 
 Stack: Nuxt 4 (`app/` dir), Vue 3 `<script setup lang="ts">`, @nuxt/ui v4 (Reka UI +
-Tailwind v4), `convex-nuxt` + `convex-vue`, lucide icons via `@iconify-json/lucide`,
-zod v4. Deployed to Cloudflare Workers via Alchemy (`packages/infra/alchemy.run.ts`).
+Tailwind v4), `@nuxtjs/i18n` (pt-PT default, en), `@vueuse/nuxt`, `dayjs`,
+`convex-nuxt` + `convex-vue`, lucide icons via `@iconify-json/lucide`, zod v4.
+Deployed to Cloudflare Workers via Alchemy (`packages/infra/alchemy.run.ts`).
 
 ## Commands (run from repo root)
 
-| Task | Command |
-| --- | --- |
-| Dev server (port 3001) | `pnpm run dev:web` |
-| Convex backend dev | `pnpm run dev:server` (needed for any data on screen) |
-| Build | `pnpm run build` |
-| Typecheck (`nuxt typecheck` / vue-tsc) | `pnpm run check-types` |
-| Lint + format (oxlint, oxfmt --write) | `pnpm run check` |
+| Task                                   | Command                                               |
+| -------------------------------------- | ----------------------------------------------------- |
+| Dev server (port 3001)                 | `pnpm run dev:web`                                    |
+| Convex backend dev                     | `pnpm run dev:server` (needed for any data on screen) |
+| Build                                  | `pnpm run build`                                      |
+| Typecheck (`nuxt typecheck` / vue-tsc) | `pnpm run check-types`                                |
+| Lint + format (oxlint, oxfmt --write)  | `pnpm run check`                                      |
 
 - `nuxt prepare` runs on `postinstall` and regenerates `.nuxt/` (types, auto-import
   stubs, `tsconfig.*.json` that the root `tsconfig.json` references). **Never edit
@@ -47,12 +48,65 @@ public/                static files (favicon, robots.txt)
 - Always `<script setup lang="ts">`. Vue/Nuxt APIs (`ref`, `computed`, `useRoute`,
   `navigateTo`, `useState`, `definePageMeta`) are auto-imported; explicit imports from
   `vue` are tolerated but unnecessary.
+- Functions take at most two parameters. Anything that needs more takes a single
+  options object with named fields (`buildSlots({ firstDayMs, count })`, never
+  `buildSlots(firstDayMs, count, tz)`). Applies to composables, utils and component
+  helpers alike.
+- Dates and times: `dayjs` (with the `utc` and `timezone` plugins) is the only date
+  library, and `composables/useLisbonTime.ts` is the only place it is imported. Use
+  dayjs's built-in utilities (`startOf`, `add`, `diff`, `format`, `isSame`, `tz`) rather
+  than hand-rolled `Intl`/`Date` arithmetic. Any code that reads, compares or formats a
+  date calls a `useLisbonTime()` helper (`startOfDay`, `addDays`, `atTime`,
+  `formatRange`, ...); if the helper you need does not exist, add it to the composable,
+  built on dayjs, and call it from there. Never `new Date()` math in a component.
+- VueUse (`@vueuse/core` via `@vueuse/nuxt`, auto-imported) is the first stop for
+  browser, DOM, sensor, watch and reactivity helpers. Before writing an event listener,
+  observer, debounce, storage sync, scroll or media-query check by hand, look for the
+  VueUse composable that does it (the `vueuse-functions` skill in `.claude/skills` has
+  the full catalogue). Expected fits in this app: `useInfiniteScroll` (search results),
+  `useTextareaAutosize` (message composer), `useDebounceFn` / `watchDebounced` (filters),
+  `useOnline` (connection errors), `onClickOutside`, `useScrollLock`, `useBreakpoints`.
+  Do not use VueUse for what Nuxt or Nuxt UI already own: head/SEO (`useSeoMeta`),
+  colour mode (`UColorModeButton`), toasts, overlays, and dates (`useLisbonTime`).
 - Page-level options go in `definePageMeta({ layout, middleware, name })`, not in props.
 - Shared client state across components/pages: `useState("key", () => init)`. Do not
   reach for Pinia; Convex queries are already the reactive source of truth for server data.
 - SEO/head: `useSeoMeta` / `useHead` inside the page.
 - Nuxt's `useFetch`/`useAsyncData` are for HTTP endpoints only — for Convex data use the
   Convex composables below.
+
+## i18n (Portuguese first)
+
+The product is for Portugal. `pt` (European Portuguese, `pt-PT`) is the default locale
+and has no URL prefix; `en` lives under `/en/...` (`@nuxtjs/i18n`, strategy
+`prefix_except_default`, browser detection with a `locale` cookie).
+
+- Translations live locally in `i18n/locales/pt.json` and `i18n/locales/en.json`. Every
+  key exists in both files; add the Portuguese string first. No translation service.
+- Every user-visible string goes through `t()` from `useI18n()` in `<script setup>`:
+  labels, aria-labels, toasts, empty states, SEO meta, validation messages. Never
+  hardcode text in a template or a `.ts` file. Reactive props built from `t()` (link
+  arrays, nav items) must be `computed` so they update on locale switch.
+- Keys are grouped by feature (`nav.*`, `hero.*`, `slot.*`, `request.status.*`, ...).
+  Keys never contain dots (`ntrp35`, not `3.5`; vue-i18n reads dots as nesting).
+  Plurals use vue-i18n pipe syntax with three forms `zero | one | many` and are called
+  with a count: `t("slot.openCount", n)`. Interpolation uses named params:
+  `t("footer.copyright", { year })`.
+- Write pt-PT, not pt-BR: "ténis", "ecrã", "aceite", "campo" for court, informal "tu".
+- Links: `to="/register"` on `UButton` / `ULink` / `UNavigationMenu` is localized
+  automatically by Nuxt UI. Use `useLocalePath()` for programmatic `navigateTo`.
+- Language switching lives only in `LocaleSwitcher.vue`: `<SwitchLocalePathLink>` per
+  locale plus `setLocaleCookie(code)` on click (browser detection reads that cookie on
+  `/`; without updating it a switch to `pt` bounces back to `/en`). Docs:
+  https://i18n.nuxtjs.org/docs/components/switch-locale-path-link
+- Nuxt UI's own component strings come from `@nuxt/ui/locale`, wired on
+  `<UApp :locale>` in `app.vue` together with `useLocaleHead` for `lang` and hreflang.
+- Dates follow the locale through `useLisbonTime()` (dayjs `pt` and `en` locales are
+  loaded there; format patterns are the `dates.*` keys). Do not format dates elsewhere.
+- Typed keys: `experimental.typedOptionsAndMessages` is on, so a wrong key fails
+  `pnpm run check-types`.
+- `i18n.baseUrl` (hreflang/canonical origin) reads `NUXT_PUBLIC_SITE_URL`, falling back
+  to localhost. Set it in production once the domain is decided.
 
 ## Nuxt UI v4
 
@@ -88,12 +142,16 @@ const { data, error, isPending, suspense } = useConvexQuery(api.todos.getAll, {}
 const { data: byUser } = useConvexQuery(api.matches.byUser, () => ({ userId: userId.value }));
 
 // Mutation
-const { mutate: createTodo, isPending: isCreating, error: createError } =
-  useConvexMutation(api.todos.create, { optimisticUpdate: /* optional */ undefined });
+const {
+  mutate: createTodo,
+  isPending: isCreating,
+  error: createError,
+} = useConvexMutation(api.todos.create, { optimisticUpdate: /* optional */ undefined });
 await createTodo({ text }); // returns the mutation result, throws on failure
 ```
 
 Rules:
+
 - `data` is `undefined` while loading; always branch on `isPending` / `error` / `data`
   (see `app/pages/todos.vue` for the canonical loading -> error -> empty -> list pattern
   with `USkeleton`, `UAlert`, `UEmpty`). The composable's return object itself is never
@@ -126,11 +184,16 @@ Rules:
 import * as z from "zod";
 import type { FormSubmitEvent } from "@nuxt/ui";
 
-const schema = z.object({ city: z.string().min(2), level: z.enum(["beginner", "intermediate", "advanced"]) });
+const schema = z.object({
+  city: z.string().min(2),
+  level: z.enum(["beginner", "intermediate", "advanced"]),
+});
 type Schema = z.output<typeof schema>;
 const state = reactive<Partial<Schema>>({});
 
-async function onSubmit(event: FormSubmitEvent<Schema>) { await mutate(event.data); }
+async function onSubmit(event: FormSubmitEvent<Schema>) {
+  await mutate(event.data);
+}
 </script>
 
 <template>

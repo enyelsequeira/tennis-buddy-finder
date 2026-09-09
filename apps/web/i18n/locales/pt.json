@@ -1,0 +1,158 @@
+{
+  "app": {
+    "name": "Tennis Buddy",
+    "location": "Figueira da Foz, Coimbra"
+  },
+  "seo": {
+    "title": "Tennis Buddy: encontra um parceiro de ténis na Figueira da Foz",
+    "description": "Publica as horas em que podes jogar, vê quem está livre à mesma hora e a um nível NTRP parecido, e combina o jogo no chat. A chegar à Figueira da Foz."
+  },
+  "nav": {
+    "howItWorks": "Como funciona",
+    "yourLevel": "O teu nível",
+    "safety": "Segurança",
+    "signIn": "Entrar",
+    "createAccount": "Criar conta",
+    "language": "Idioma",
+    "demo": "Demo"
+  },
+  "playground": {
+    "title": "Demo de traduções",
+    "description": "Tudo o que muda com o idioma numa só página: textos, datas do useLisbonTime, plurais, estados e os componentes partilhados. Troca o idioma no cabeçalho e confirma.",
+    "locale": "Idioma",
+    "current": "Atual",
+    "available": "Disponíveis",
+    "switch": "Trocar",
+    "dates": "Datas",
+    "longDay": "Dia por extenso",
+    "shortDay": "Dia curto",
+    "weekdays": "Dias da semana",
+    "range": "Intervalo",
+    "duration": "Duração",
+    "plurals": "Plurais",
+    "statuses": "Estados e formatos",
+    "components": "Componentes partilhados",
+    "reset": "Repor"
+  },
+  "dates": {
+    "longDay": "dddd, D [de] MMMM",
+    "shortDay": "ddd D"
+  },
+  "slot": {
+    "status": {
+      "open": "Livre",
+      "matched": "Combinado"
+    },
+    "anyVenue": "Qualquer campo",
+    "askToPlay": "Pedir para jogar",
+    "requested": "Pedido enviado",
+    "count": "0 horários | 1 horário | {n} horários",
+    "openCount": "0 livres | 1 livre | {n} livres",
+    "withPlayer": "{range} com {name}"
+  },
+  "player": {
+    "ntrp": "NTRP {rating}",
+    "playingYears": "joga há 0 anos | joga há 1 ano | joga há {n} anos",
+    "formats": {
+      "singles": "Singulares",
+      "doubles": "Pares",
+      "both": "Ambos"
+    }
+  },
+  "request": {
+    "status": {
+      "pending": "À espera",
+      "accepted": "Aceite",
+      "declined": "Recusado",
+      "cancelled": "Cancelado"
+    }
+  },
+  "hero": {
+    "title": "Um parceiro de treino ao teu nível, quando estás livre.",
+    "description": "Publica as horas em que podes jogar. Vê quem na Figueira da Foz está livre à mesma hora e joga a um nível parecido. Combina os detalhes no chat e vai jogar.",
+    "primary": "Criar conta",
+    "secondary": "Ver como funciona"
+  },
+  "demo": {
+    "pickDay": "Escolhe um dia",
+    "openSlots": "Horários livres",
+    "caption": "Pré-visualização com jogadores de exemplo. Os horários reais aparecem depois de criares conta.",
+    "emptyTitle": "Ainda ninguém está livre neste dia.",
+    "emptyDescription": "Experimenta outro dia ou alarga o intervalo de nível.",
+    "toastTitle": "Pedido enviado",
+    "toastDescription": "Isto é uma pré-visualização. Na app, {name} receberia uma notificação."
+  },
+  "steps": {
+    "title": "Como funciona",
+    "description": "Quatro passos de uma tarde livre a um campo marcado.",
+    "stepLabel": "Passo {n}:",
+    "items": {
+      "add": {
+        "title": "Adiciona quando podes jogar",
+        "description": "Horários concretos em passos de 30 minutos num calendário mensal, com campo se tiveres um. Quem joga sempre à mesma hora copia a semana passada num toque."
+      },
+      "find": {
+        "title": "Encontra um jogo",
+        "description": "Vê quem está livre nos próximos 7 dias. Filtra por altura do dia, nível, formato e campo. Os resultados aparecem agrupados por dia."
+      },
+      "ask": {
+        "title": "Pede para jogar",
+        "description": "Envia um pedido num horário, com uma nota se quiseres. O outro jogador aceita ou recusa, e recebes a resposta na app e por email."
+      },
+      "chat": {
+        "title": "Conversa e combina",
+        "description": "Aceitar abre um chat privado com o horário combinado fixado no topo. Combinam o campo e vão jogar."
+      }
+    },
+    "filters": {
+      "evening": "Fim de tarde",
+      "ntrp": "NTRP 3.0–4.0",
+      "singles": "Singulares",
+      "venue": "Campo"
+    },
+    "requestNote": "O campo 3 costuma estar livre às 6. Eu reservo, trazes bolas?",
+    "chatTheirs": "Boa! Vemo-nos no clube.",
+    "chatMine": "Estou 5 min atrasado, começa a aquecer sem mim."
+  },
+  "levels": {
+    "title": "Diz o teu nível em NTRP",
+    "description": "Autodeclarado, de 1.0 a 7.0 em meios pontos. A pesquisa começa meio ponto acima e abaixo do teu, para que os jogadores que vês te possam mesmo dar jogo.",
+    "items": {
+      "ntrp25": "A aprender a trocar bolas. A cobertura do campo ainda está a ganhar forma.",
+      "ntrp30": "Razoavelmente consistente em bolas de ritmo médio, mas ainda não em todas as pancadas.",
+      "ntrp35": "Pancadas fiáveis com controlo de direção, a começar a usar efeito e profundidade.",
+      "ntrp40": "Fiável dos dois lados, varia o ritmo e joga com profundidade.",
+      "ntrp45": "Usa potência e efeito, aguenta ritmo e fecha pontos na rede.",
+      "ntrp50": "Antecipa bem, tem uma arma e constrói os pontos à volta dela."
+    }
+  },
+  "safety": {
+    "title": "Feito para ser seguro desde o primeiro dia",
+    "description": "Só o necessário para combinar um jogo, e formas claras de te afastares de quem não queres jogar.",
+    "items": {
+      "verified": {
+        "title": "Contas verificadas",
+        "description": "O email é confirmado antes do primeiro início de sessão. Entrar com Google ou Facebook conta como verificado."
+      },
+      "noPhone": {
+        "title": "Sem números de telefone",
+        "description": "O chat fica na app. Os números nunca são guardados nem mostrados, por isso decides o que partilhas e quando."
+      },
+      "block": {
+        "title": "Bloquear e denunciar",
+        "description": "Bloquear esconde-vos um ao outro e cancela qualquer pedido aberto entre os dois. As denúncias são lidas por uma pessoa."
+      },
+      "adults": {
+        "title": "Maiores de 18",
+        "description": "Verificado a partir da data de nascimento quando crias o perfil."
+      }
+    }
+  },
+  "cta": {
+    "title": "Primeiro, a Figueira da Foz.",
+    "description": "A app está a ser construída agora. Cria uma conta, adiciona as horas em que podes jogar, e os jogadores perto de ti encontram-te no dia em que abrir. Outras cidades vêm a seguir."
+  },
+  "footer": {
+    "copyright": "© {year} Tennis Buddy"
+  }
+}

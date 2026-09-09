@@ -1,0 +1,158 @@
+{
+  "app": {
+    "name": "Tennis Buddy",
+    "location": "Figueira da Foz, Coimbra"
+  },
+  "seo": {
+    "title": "Tennis Buddy: find a hitting partner in Figueira da Foz",
+    "description": "Post the times you can play, see who is free at the same time and a similar NTRP level, and arrange the match in chat. Launching in Figueira da Foz."
+  },
+  "nav": {
+    "howItWorks": "How it works",
+    "yourLevel": "Your level",
+    "safety": "Safety",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "language": "Language",
+    "demo": "Demo"
+  },
+  "playground": {
+    "title": "Translation demo",
+    "description": "Everything that changes with the language on one page: copy, dates from useLisbonTime, plurals, statuses and the shared components. Switch the language in the header and check.",
+    "locale": "Language",
+    "current": "Current",
+    "available": "Available",
+    "switch": "Switch",
+    "dates": "Dates",
+    "longDay": "Long day",
+    "shortDay": "Short day",
+    "weekdays": "Weekdays",
+    "range": "Range",
+    "duration": "Duration",
+    "plurals": "Plurals",
+    "statuses": "Statuses and formats",
+    "components": "Shared components",
+    "reset": "Reset"
+  },
+  "dates": {
+    "longDay": "dddd D MMMM",
+    "shortDay": "ddd D"
+  },
+  "slot": {
+    "status": {
+      "open": "Open",
+      "matched": "Matched"
+    },
+    "anyVenue": "Any venue",
+    "askToPlay": "Ask to play",
+    "requested": "Requested",
+    "count": "0 slots | 1 slot | {n} slots",
+    "openCount": "0 open | 1 open | {n} open",
+    "withPlayer": "{range} with {name}"
+  },
+  "player": {
+    "ntrp": "NTRP {rating}",
+    "playingYears": "playing 0 years | playing 1 year | playing {n} years",
+    "formats": {
+      "singles": "Singles",
+      "doubles": "Doubles",
+      "both": "Both"
+    }
+  },
+  "request": {
+    "status": {
+      "pending": "Waiting",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "cancelled": "Cancelled"
+    }
+  },
+  "hero": {
+    "title": "A hitting partner at your level, when you're free.",
+    "description": "Post the times you can play. See who in Figueira da Foz is free at the same time and plays at a similar level. Sort out the details in chat, then go play.",
+    "primary": "Create account",
+    "secondary": "See how it works"
+  },
+  "demo": {
+    "pickDay": "Pick a day",
+    "openSlots": "Open slots",
+    "caption": "Preview with sample players. Real slots show once you create an account.",
+    "emptyTitle": "No one is free on this day yet.",
+    "emptyDescription": "Try another day or widen the level range.",
+    "toastTitle": "Request sent",
+    "toastDescription": "This is a preview. In the app, {name} would get a notification."
+  },
+  "steps": {
+    "title": "How it works",
+    "description": "Four steps from a free evening to a booked court.",
+    "stepLabel": "Step {n}:",
+    "items": {
+      "add": {
+        "title": "Add when you can play",
+        "description": "Concrete slots in 30-minute steps on a month calendar, with a venue if you have one. Regulars copy last week in one tap."
+      },
+      "find": {
+        "title": "Find a game",
+        "description": "See who is free in the next 7 days. Filter by time of day, level, format and venue. Results are grouped by day."
+      },
+      "ask": {
+        "title": "Ask to play",
+        "description": "Send a request on a slot with an optional note. The other player accepts or declines, and you hear back in the app and by email."
+      },
+      "chat": {
+        "title": "Chat and meet",
+        "description": "Accepting opens a private chat with the matched slot pinned at the top. Agree on the court and go."
+      }
+    },
+    "filters": {
+      "evening": "Evening",
+      "ntrp": "NTRP 3.0–4.0",
+      "singles": "Singles",
+      "venue": "Venue"
+    },
+    "requestNote": "Court 3 is usually free at 6. I'll book it, bring balls?",
+    "chatTheirs": "Boa! See you at the club.",
+    "chatMine": "Running 5 min late, warm up without me."
+  },
+  "levels": {
+    "title": "Say your level in NTRP",
+    "description": "Self-declared, from 1.0 to 7.0 in half steps. Search starts half a point either side of yours, so the players you see can actually give you a game.",
+    "items": {
+      "ntrp25": "Learning to rally. Court coverage is still a work in progress.",
+      "ntrp30": "Fairly consistent on medium-paced shots, not yet on every stroke.",
+      "ntrp35": "Dependable strokes with directional control, starting to use spin and depth.",
+      "ntrp40": "Reliable on both sides, can vary pace and hit with depth.",
+      "ntrp45": "Uses power and spin, handles pace, closes points at the net.",
+      "ntrp50": "Anticipates well, has a weapon and builds points around it."
+    }
+  },
+  "safety": {
+    "title": "Built to be safe from day one",
+    "description": "Only what is needed to arrange a match, and clear ways to walk away from anyone you would rather not play with.",
+    "items": {
+      "verified": {
+        "title": "Verified accounts",
+        "description": "Email addresses are confirmed before the first sign-in. Google and Facebook sign-in count as verified."
+      },
+      "noPhone": {
+        "title": "No phone numbers",
+        "description": "Chat stays in the app. Numbers are never stored or shown, so you decide what to share and when."
+      },
+      "block": {
+        "title": "Block and report",
+        "description": "Blocking hides you both ways and cancels any open request between you. Reports are read by a person."
+      },
+      "adults": {
+        "title": "18 and over",
+        "description": "Checked from your birth date when you set up your profile."
+      }
+    }
+  },
+  "cta": {
+    "title": "Figueira da Foz first.",
+    "description": "The app is being built now. Create an account, add the times you can play, and players near you can find you the day it opens. More cities come after."
+  },
+  "footer": {
+    "copyright": "© {year} Tennis Buddy"
+  }
+}
