@@ -232,6 +232,7 @@ and is reached through a same-origin proxy so the session cookie is first-party.
 | `app/composables/useConvexToken.ts` | `fetchConvexToken()` -> Convex JWT or null; server side exchanges the request cookie via `getToken`, client side uses `authClient.convex.token()`.           |
 | `app/composables/useConvexAuthReady.ts` | `useConvexAuthReady()` -> `Ref<boolean>`, true once the Convex client holds a token for the session. Only the plugin writes it.                         |
 | `app/plugins/convex-auth.client.ts` | Client-only plugin that watches the session id and calls `convex.setAuth(fetchAccessToken, onChange)` / `convex.client.clearAuth()`; drives `useConvexAuthReady`. |
+| `app/plugins/auth-pageshow.client.ts` | Client-only bfcache guard: on `pageshow` with `persisted`, re-checks the session and re-applies the page's `auth` / `guest` guard (no middleware runs on a back/forward cache restore).                    |
 
 Rules:
 

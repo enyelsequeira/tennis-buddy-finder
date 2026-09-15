@@ -8,6 +8,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const { isSignedIn } = await useAuthSession();
 
   if (!isSignedIn.value) {
-    return navigateTo({ path: localePath("/login"), query: { redirect: to.fullPath } });
+    return navigateTo(
+      { path: localePath("/login"), query: { redirect: to.fullPath } },
+      { replace: true },
+    );
   }
 });

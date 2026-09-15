@@ -3,7 +3,8 @@ import { authClient } from "~/utils/auth-client";
 /**
  * Signs the user out of Better Auth and sends them to the localized login page.
  * The Convex token is dropped by `plugins/convex-auth.client.ts` when the
- * session disappears; nothing else needs to run.
+ * session disappears; the cached session and current-user data are cleared so
+ * no guard can act on a stale value.
  */
 export function useSignOut() {
   const localePath = useLocalePath();
@@ -13,7 +14,8 @@ export function useSignOut() {
     isPending.value = true;
     try {
       await authClient.signOut();
-      await navigateTo(localePath("/login"));
+      clearNuxtData(["auth-session", "current-user"]);
+      await navigateTo(localePath("/login"), { replace: true });
     } finally {
       isPending.value = false;
     }

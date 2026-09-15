@@ -7,6 +7,6 @@ export default defineNuxtRouteMiddleware(async () => {
   const { isSignedIn } = await useAuthSession();
 
   if (isSignedIn.value) {
-    return navigateTo(localePath("/find"));
+    return navigateTo(localePath("/find"), { replace: true });
   }
 });

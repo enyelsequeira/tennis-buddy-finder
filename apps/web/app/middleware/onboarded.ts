@@ -9,6 +9,6 @@ export default defineNuxtRouteMiddleware(async () => {
   const { me } = await useCurrentUser();
 
   if (me.value && me.value.profile === null) {
-    return navigateTo(localePath("/onboarding"));
+    return navigateTo(localePath("/onboarding"), { replace: true });
   }
 });

@@ -7,6 +7,6 @@ export default defineNuxtRouteMiddleware(async () => {
   const { me } = await useCurrentUser();
 
   if (me.value?.user.role !== "admin") {
-    return navigateTo(localePath("/find"));
+    return navigateTo(localePath("/find"), { replace: true });
   }
 });
