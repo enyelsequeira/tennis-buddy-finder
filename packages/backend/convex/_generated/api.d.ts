@@ -8,8 +8,20 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
+import type * as blocks from "../blocks.js";
 import type * as healthCheck from "../healthCheck.js";
+import type * as http from "../http.js";
+import type * as model_auth from "../model/auth.js";
+import type * as model_blocks from "../model/blocks.js";
+import type * as model_errors from "../model/errors.js";
+import type * as model_profileSchema from "../model/profileSchema.js";
+import type * as model_time from "../model/time.js";
+import type * as model_users from "../model/users.js";
 import type * as model_validators from "../model/validators.js";
+import type * as profiles from "../profiles.js";
+import type * as users from "../users.js";
+import type * as venues from "../venues.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +30,20 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
+  blocks: typeof blocks;
   healthCheck: typeof healthCheck;
+  http: typeof http;
+  "model/auth": typeof model_auth;
+  "model/blocks": typeof model_blocks;
+  "model/errors": typeof model_errors;
+  "model/profileSchema": typeof model_profileSchema;
+  "model/time": typeof model_time;
+  "model/users": typeof model_users;
   "model/validators": typeof model_validators;
+  profiles: typeof profiles;
+  users: typeof users;
+  venues: typeof venues;
 }>;
 
 /**
@@ -48,4 +72,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
+};

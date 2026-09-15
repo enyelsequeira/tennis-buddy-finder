@@ -23,6 +23,6 @@ const color = computed(() => COLORS[props.status]);
     :color="color"
     variant="soft"
     size="sm"
-    :class="status === 'pending' && 'bg-(--ui-color-warning-50) text-(--ui-color-warning-800)'"
+    :class="status === 'pending' && 'bg-warning-50 text-warning-800'"
   />
 </template>

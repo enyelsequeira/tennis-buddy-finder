@@ -14,7 +14,16 @@
     "signIn": "Sign in",
     "createAccount": "Create account",
     "language": "Language",
-    "demo": "Demo"
+    "demo": "Demo",
+    "main": "Main navigation",
+    "find": "Find",
+    "calendar": "Calendar",
+    "requests": "Requests",
+    "messages": "Messages",
+    "me": "Me",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "account": "Account"
   },
   "playground": {
     "title": "Translation demo",
@@ -154,5 +163,211 @@
   },
   "footer": {
     "copyright": "© {year} Tennis Buddy"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Welcome back. Sign in to see who is free to play.",
+      "submit": "Sign in",
+      "noAccount": "No account yet?",
+      "createOne": "Create one",
+      "seoTitle": "Sign in · Tennis Buddy",
+      "seoDescription": "Sign in to your Tennis Buddy account to see who is free to play tennis in Figueira da Foz."
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Takes a minute. Then tell us when you can play.",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "seoTitle": "Create account · Tennis Buddy",
+      "seoDescription": "Create your Tennis Buddy account and find a hitting partner at your level in Figueira da Foz."
+    },
+    "providers": {
+      "google": "Continue with Google",
+      "facebook": "Continue with Facebook"
+    },
+    "divider": "or with email",
+    "showcase": {
+      "ariaLabel": "Illustration of a tennis court with a racket resting on the ground",
+      "title": "Who is free when you are.",
+      "description": "Players in Figueira da Foz post the hours they can play. Pick one at your level and ask to play."
+    },
+    "fields": {
+      "name": "Name",
+      "namePlaceholder": "What people call you on court",
+      "email": "Email",
+      "emailPlaceholder": "you{'@'}example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Your password",
+      "newPasswordPlaceholder": "At least 8 characters"
+    },
+    "validation": {
+      "emailInvalid": "Enter a valid email.",
+      "passwordRequired": "Enter your password.",
+      "nameMin": "Name must be at least 2 characters.",
+      "nameMax": "Name can be at most 60 characters.",
+      "passwordMin": "Password must be at least 8 characters.",
+      "passwordMax": "Password can be at most 128 characters."
+    },
+    "errors": {
+      "invalidCredentials": "Wrong email or password. Check them and try again.",
+      "emailNotVerified": "Your email is not confirmed yet. Open the link we sent you, then sign in again.",
+      "userAlreadyExists": "An account with this email already exists. Sign in instead.",
+      "invalidEmail": "This email is not valid.",
+      "invalidPassword": "This password is not valid.",
+      "passwordTooShort": "Password is too short. Use at least 8 characters.",
+      "passwordTooLong": "Password is too long. Use at most 128 characters.",
+      "providerUnavailable": "Signing in with this service is not available yet. Use email for now.",
+      "accountAlreadyLinked": "This account is already linked to another user.",
+      "generic": "Couldn't complete the request. Check your connection and try again."
+    }
+  },
+  "onboarding": {
+    "title": "Tell us how you play",
+    "subtitle": "Takes two minutes. It lets us show you players at your level.",
+    "seoTitle": "Create profile · Tennis Buddy",
+    "optional": "Optional",
+    "sections": {
+      "aboutYou": "About you",
+      "yourTennis": "Your tennis",
+      "languages": "Languages",
+      "bio": "Bio"
+    },
+    "fields": {
+      "displayName": "Display name",
+      "displayNamePlaceholder": "What people call you on court",
+      "birthDate": "Birth date",
+      "gender": "Gender",
+      "ntrp": "NTRP level",
+      "ntrpHelp": "Self-rated. When in doubt pick the lower level; you can change it in settings.",
+      "yearsPlaying": "Years playing",
+      "formats": "Format",
+      "handedness": "Dominant hand",
+      "languages": "Languages you can arrange a game in",
+      "bio": "Bio",
+      "bioPlaceholder": "How you play, when you are usually free, what you look for in a partner.",
+      "bioCounter": "{count}/500"
+    },
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other",
+      "unspecified": "Prefer not to say"
+    },
+    "ntrpLevels": {
+      "ntrp10": "You are just starting to play tennis.",
+      "ntrp15": "You have limited experience and are still mostly working on getting the ball into play.",
+      "ntrp20": "You need court time: your strokes have obvious weaknesses, but you know the basic positions for singles and doubles.",
+      "ntrp25": "You are learning to judge where the ball is going and can sustain a short, slow rally with players of your level, though your court coverage is still weak.",
+      "ntrp30": "You are fairly consistent on medium-paced balls but not yet comfortable with every stroke, and direction, depth and power are still hard to control.",
+      "ntrp35": "Your strokes are dependable with directional control on moderate balls, but still lack depth and variety; you are starting to come to the net more.",
+      "ntrp40": "You have dependable strokes on both sides with direction and depth, and use lobs, overheads, approach shots and volleys with some success.",
+      "ntrp45": "You are starting to master power and spin, handle pace, control depth and adapt your game plan to the opponent; your first serve has power and accuracy.",
+      "ntrp50": "You anticipate well and have an outstanding shot to build your game around; you finish points off short balls and volleys and can execute lobs, drop shots and half volleys.",
+      "ntrp55": "Power or consistency is your main weapon; you vary strategy and style in competition and hit dependable shots under pressure.",
+      "ntrp60": "You have had intensive training for national competition at junior or college level and have held a sectional or national ranking.",
+      "ntrp65": "You have extensive experience in satellite-level or equivalent international tournaments.",
+      "ntrp70": "A world-class player committed to international tournament competition, earning a living from prize money."
+    },
+    "formatOptions": {
+      "singles": "Singles",
+      "doubles": "Doubles",
+      "both": "Both"
+    },
+    "handednessOptions": {
+      "right": "Right-handed",
+      "left": "Left-handed"
+    },
+    "languageOptions": {
+      "pt": "Portuguese",
+      "en": "English",
+      "es": "Spanish",
+      "fr": "French",
+      "de": "German",
+      "it": "Italian"
+    },
+    "location": "Figueira da Foz, Coimbra",
+    "locationHelp": "Figueira da Foz only, for now.",
+    "submit": "Finish",
+    "success": "Profile created",
+    "validation": {
+      "displayName": "Name must be between 2 and 40 characters.",
+      "birthDate": "Enter your birth date.",
+      "underage": "You must be at least 18 to use the app.",
+      "ntrp": "Pick your NTRP level.",
+      "yearsPlaying": "Enter a whole number between 0 and 90.",
+      "formats": "Pick the format you play.",
+      "languages": "Pick at least one language.",
+      "bio": "Bio can be at most 500 characters."
+    },
+    "errors": {
+      "profileExists": "You already have a profile. Taking you to the app.",
+      "generic": "Couldn't save the profile. Check your connection and try again."
+    }
+  },
+  "shell": {
+    "comingSoonTitle": "Coming soon",
+    "comingSoonDescription": "This part is still being built."
+  },
+  "pages": {
+    "find": {
+      "title": "Find a game"
+    },
+    "calendar": {
+      "title": "My availability"
+    },
+    "requests": {
+      "title": "Requests"
+    },
+    "messages": {
+      "title": "Messages"
+    },
+    "settings": {
+      "title": "Settings"
+    }
+  },
+  "playerPage": {
+    "seoTitle": "{name} · Tennis Buddy",
+    "openSlots": "Open slots",
+    "location": "{municipality}, {district}",
+    "age": "{age} years",
+    "handedness": {
+      "right": "Right-handed",
+      "left": "Left-handed"
+    },
+    "notFoundTitle": "Player not found",
+    "notFoundDescription": "This profile does not exist or is no longer available.",
+    "backToFind": "Back to search",
+    "menu": "More options",
+    "block": "Block",
+    "blockTitle": "Block {name}?",
+    "blockDescription": "You will no longer see each other: no slots, requests or messages between you.",
+    "blockConfirm": "Block",
+    "blocked": "Blocked",
+    "blockError": "Couldn't block. Check your connection and try again.",
+    "cancel": "Cancel",
+    "thisIsYou": "This is you. This is how other players see you.",
+    "editProfile": "Edit profile"
+  },
+  "settings": {
+    "profile": "Profile",
+    "editProfile": "Edit profile",
+    "cancelEdit": "Cancel",
+    "saveProfile": "Save changes",
+    "profileUpdated": "Profile updated",
+    "publicProfile": "See public profile",
+    "notifications": "Notifications",
+    "emailNotifications": "Email notifications",
+    "emailNotificationsHelp": "Get an email when someone asks you to play or answers one of your requests.",
+    "language": "Language",
+    "languageHelp": "Choose the app language.",
+    "appearance": "Appearance",
+    "blocked": "Blocked players",
+    "blockedEmpty": "You have not blocked anyone.",
+    "unblock": "Unblock",
+    "unblocked": "Player unblocked",
+    "account": "Account",
+    "saveFailed": "Could not save. Try again."
   }
 }
