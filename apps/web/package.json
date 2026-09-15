@@ -11,12 +11,14 @@
     "dev:bare": "nuxt dev"
   },
   "dependencies": {
+    "@convex-dev/better-auth": "^0.12.5",
     "@nuxt/ui": "^4.10.0",
     "@nuxtjs/i18n": "^10.6.0",
     "@tennis-buddy-finder/backend": "workspace:*",
     "@tennis-buddy-finder/env": "workspace:*",
     "@vueuse/core": "^14.4.0",
     "@vueuse/nuxt": "^14.4.0",
+    "better-auth": "~1.6.31",
     "convex": "catalog:",
     "convex-nuxt": "0.1.5",
     "convex-vue": "^0.1.5",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@alchemy.run/frontend-frameworks": "2.0.0-beta.75",
     "@iconify-json/lucide": "^1.2.120",
+    "@iconify-json/simple-icons": "^1.2.96",
     "@tennis-buddy-finder/config": "workspace:*",
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",

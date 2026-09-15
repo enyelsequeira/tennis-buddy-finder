@@ -10,9 +10,13 @@ const convexUrlSchema = (exampleHost: string) =>
  * Nuxt env validation - validates at build time when imported in nuxt.config.ts
  * For runtime access in components/plugins, use useRuntimeConfig() instead:
  *   const config = useRuntimeConfig()
- *   config.public.serverUrl (NUXT_PUBLIC_SERVER_URL maps to serverUrl)
+ *   config.public.convex.url (NUXT_PUBLIC_CONVEX_URL) and config.convexSiteUrl (NUXT_CONVEX_SITE_URL)
  */
 export const env = createEnv({
+  server: {
+    // *.convex.site URL of the deployment; target of the Nitro /api/auth/* proxy.
+    NUXT_CONVEX_SITE_URL: convexUrlSchema("example.convex.site"),
+  },
   client: {
     NUXT_PUBLIC_CONVEX_URL: convexUrlSchema("example.convex.cloud"),
   },

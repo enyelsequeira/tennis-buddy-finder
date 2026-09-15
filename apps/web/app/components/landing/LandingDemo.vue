@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RailDay, SlotSummary } from "~/types/slots";
+import type { SlotSummary } from "~/types/slots";
 
 /**
  * Interactive preview of the Find page with sample players.
@@ -25,7 +25,7 @@ const slotsByDay = computed(() => {
   return map;
 });
 
-const days = computed<RailDay[]>(() =>
+const days = computed(() =>
   Array.from({ length: DEMO_DAY_COUNT }, (_, offset) => {
     const startAt = addDays(firstDayMs.value, offset);
     return { startAt, hasOpen: slotsByDay.value.has(startAt) };

@@ -12,6 +12,11 @@ export default defineNuxtConfig({
   devServer: {
     port: 3001,
   },
+  runtimeConfig: {
+    // Server-only. Set via NUXT_CONVEX_SITE_URL (the *.convex.site URL of the
+    // deployment); it is the target of the /api/auth/* proxy in server/api/auth.
+    convexSiteUrl: "",
+  },
   i18n: {
     // Portuguese (Portugal) is the product language; English is secondary.
     defaultLocale: "pt",

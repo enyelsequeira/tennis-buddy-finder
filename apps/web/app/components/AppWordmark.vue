@@ -8,7 +8,7 @@ const { t } = useI18n();
   <span class="inline-flex items-center gap-2">
     <span
       class="rounded-full bg-warning shrink-0"
-      :class="size === 'lg' ? 'size-5' : 'size-[18px]'"
+      :class="size === 'lg' ? 'size-5' : 'size-4.5'"
       aria-hidden="true"
     />
     <span
