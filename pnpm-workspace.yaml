@@ -14,3 +14,10 @@ catalog:
   typescript: ^6.0.3
   "@types/node": ^26.2.0
   convex: ^1.45.0
+minimumReleaseAgeExclude:
+  - '@mantine-vue/core@3.4.0'
+  - '@mantine-vue/form@3.4.0'
+  - '@mantine-vue/hooks@3.4.0'
+  - '@mantine-vue/notifications@3.4.0'
+  - '@mantine-vue/store@3.4.0'
+  - '@mantine-vue/utils@3.4.0'

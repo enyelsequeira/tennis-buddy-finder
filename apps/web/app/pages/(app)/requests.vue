@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Stack, Title } from "@mantine-vue/core";
+
 definePageMeta({ middleware: ["auth", "onboarded"] });
 
 const { t } = useI18n();
@@ -7,12 +9,8 @@ useSeoMeta({ title: () => t("pages.requests.title") });
 </script>
 
 <template>
-  <div class="space-y-4">
-    <h1
-      class="font-display font-bold tracking-[-0.015em] text-[22px] md:text-[26px] text-highlighted"
-    >
-      {{ t("pages.requests.title") }}
-    </h1>
+  <Stack gap="md">
+    <Title :order="1" :fz="{ base: 22, sm: 26 }">{{ t("pages.requests.title") }}</Title>
     <ComingSoon />
-  </div>
+  </Stack>
 </template>

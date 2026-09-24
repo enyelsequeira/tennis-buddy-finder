@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Box, Stack, Text, UnstyledButton } from "@mantine-vue/core";
 import type { RailDay } from "~/types/slots";
 
 defineProps<{ days: RailDay[] }>();
@@ -11,36 +12,90 @@ const { formatWeekday, formatDayNumber, formatLongDay } = useLisbonTime();
 </script>
 
 <template>
-  <div
-    class="flex gap-2 overflow-x-auto snap-x -mx-4 px-4 pb-1 md:mx-0 md:px-0 md:grid md:grid-cols-7 md:overflow-visible"
-    role="group"
-    :aria-label="t('demo.pickDay')"
-  >
-    <button
+  <Box :class="$style.rail" role="group" :aria-label="t('demo.pickDay')">
+    <UnstyledButton
       v-for="day in days"
       :key="day.startAt"
       type="button"
-      class="snap-start shrink-0 w-[4.5rem] md:w-auto rounded-xl py-2.5 flex flex-col items-center gap-0.5 ring transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      :class="
-        day.startAt === selected
-          ? 'bg-primary text-inverted ring-primary'
-          : 'bg-elevated text-default ring-default hover:bg-accented'
-      "
+      py="xs"
+      bdrs="lg"
+      :class="$style.day"
+      :mod="{ selected: day.startAt === selected }"
       :aria-pressed="day.startAt === selected"
       :aria-label="formatLongDay(day.startAt)"
       @click="selected = day.startAt"
     >
-      <span class="text-xs" :class="day.startAt === selected ? 'text-inverted/80' : 'text-muted'">
-        {{ formatWeekday(day.startAt) }}
-      </span>
-      <span class="font-display font-bold text-lg leading-tight">
-        {{ formatDayNumber(day.startAt) }}
-      </span>
-      <span
-        class="size-1.5 rounded-full"
-        :class="day.hasOpen ? 'bg-warning' : 'bg-transparent'"
-        aria-hidden="true"
-      />
-    </button>
-  </div>
+      <Stack :gap="2" align="center">
+        <Text
+          size="xs"
+          :c="day.startAt === selected ? undefined : 'dimmed'"
+          :opacity="day.startAt === selected ? 0.8 : undefined"
+        >
+          {{ formatWeekday(day.startAt) }}
+        </Text>
+        <Text ff="heading" fw="700" size="lg" :lh="1.25">
+          {{ formatDayNumber(day.startAt) }}
+        </Text>
+        <Box
+          :w="6"
+          :h="6"
+          bdrs="50%"
+          :bg="day.hasOpen ? 'ball.5' : 'transparent'"
+          aria-hidden="true"
+        />
+      </Stack>
+    </UnstyledButton>
+  </Box>
 </template>
+
+<style module>
+/* Mobile: one scroll-snapping row bleeding to the screen edges; from `sm` a 7-column grid. */
+.rail {
+  display: flex;
+  gap: rem(8px);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  margin-inline: calc(-1 * var(--mantine-spacing-md));
+  padding-inline: var(--mantine-spacing-md);
+  padding-bottom: rem(4px);
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    overflow: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+/* Scoped under .rail so it outranks UnstyledButton's own background/colour reset. */
+.rail .day {
+  flex-shrink: 0;
+  width: rem(72px);
+  scroll-snap-align: start;
+  background-color: var(--app-color-elevated);
+  border: rem(1px) solid var(--mantine-color-default-border);
+  transition: background-color 150ms ease;
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    width: auto;
+  }
+
+  @media (hover: hover) {
+    &:not([data-selected]):hover {
+      background-color: var(--mantine-color-default-hover);
+    }
+  }
+
+  &[data-selected] {
+    background-color: var(--mantine-color-court-filled);
+    border-color: var(--mantine-color-court-filled);
+    color: var(--mantine-color-white);
+  }
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(2px);
+  }
+}
+</style>

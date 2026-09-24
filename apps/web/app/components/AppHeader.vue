@@ -1,9 +1,19 @@
 <script setup lang="ts">
-import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
+import {
+  Anchor,
+  Avatar,
+  Box,
+  Button,
+  Container,
+  Group,
+  Menu,
+  UnstyledButton,
+} from "@mantine-vue/core";
+import { NuxtLinkLocale } from "#components";
 
 /**
- * Desktop app shell header (`md` and up): wordmark, the four main sections
- * and the avatar menu with Settings and Sign out. Below `md` the page title
+ * Desktop app shell header (`sm` and up): wordmark, the four main sections
+ * and the avatar menu with Settings and Sign out. Below `sm` the page title
  * row and `AppTabBar` take over, so the whole header is hidden there.
  */
 const { t } = useI18n();
@@ -14,51 +24,88 @@ const { me } = await useCurrentUser();
 
 const isActive = (path: string) => route.path.startsWith(localePath(path));
 
-const items = computed<NavigationMenuItem[]>(() => [
-  { label: t("nav.find"), to: "/find", active: isActive("/find") },
-  { label: t("nav.calendar"), to: "/calendar", active: isActive("/calendar") },
-  { label: t("nav.requests"), to: "/requests", active: isActive("/requests") },
-  { label: t("nav.messages"), to: "/messages", active: isActive("/messages") },
-]);
-
-const menu = computed<DropdownMenuItem[][]>(() => [
-  [{ label: t("nav.settings"), icon: "i-lucide-settings", to: localePath("/settings") }],
-  [
-    {
-      label: t("nav.signOut"),
-      icon: "i-lucide-log-out",
-      disabled: isPending.value,
-      onSelect: () => signOut(),
-    },
-  ],
+const items = computed(() => [
+  { label: t("nav.find"), to: "/find" },
+  { label: t("nav.calendar"), to: "/calendar" },
+  { label: t("nav.requests"), to: "/requests" },
+  { label: t("nav.messages"), to: "/messages" },
 ]);
 
 const displayName = computed(() => me.value?.profile?.displayName ?? me.value?.user.name ?? "");
 </script>
 
 <template>
-  <UHeader
-    to="/find"
-    :title="t('app.name')"
-    :toggle="false"
-    :ui="{ root: 'hidden md:block bg-elevated/90' }"
-  >
-    <template #title>
-      <AppWordmark />
-    </template>
+  <Box component="header" visibleFrom="sm" :class="$style.header">
+    <Container size="72rem" :h="64">
+      <Group h="100%" justify="space-between" align="center" wrap="nowrap" gap="md">
+        <Anchor
+          :component="NuxtLinkLocale"
+          to="/find"
+          display="inline-flex"
+          underline="never"
+          bdrs="sm"
+          :aria-label="t('app.name')"
+        >
+          <AppWordmark />
+        </Anchor>
 
-    <UNavigationMenu
-      :items="items"
-      :ui="{ link: 'data-[active=true]:bg-primary/10 data-[active=true]:text-primary' }"
-    />
+        <!-- Active link: court light background + court text, everything else neutral. -->
+        <Group component="nav" :gap="4" wrap="nowrap" :aria-label="t('nav.main')">
+          <Button
+            v-for="item in items"
+            :key="item.to"
+            :component="NuxtLinkLocale"
+            :to="item.to"
+            size="sm"
+            fw="500"
+            :variant="isActive(item.to) ? 'light' : 'subtle'"
+            :color="isActive(item.to) ? 'court' : 'gray'"
+            :aria-current="isActive(item.to) ? 'page' : undefined"
+          >
+            {{ item.label }}
+          </Button>
+        </Group>
 
-    <template #right>
-      <LocaleSwitcher class="hidden md:flex" />
-      <UDropdownMenu :items="menu">
-        <UButton color="neutral" variant="ghost" :aria-label="displayName || t('nav.account')">
-          <UAvatar :alt="displayName" :text="displayName.charAt(0) || '?'" size="sm" />
-        </UButton>
-      </UDropdownMenu>
-    </template>
-  </UHeader>
+        <Group gap="sm" align="center" wrap="nowrap">
+          <LocaleSwitcher />
+          <Menu position="bottom-end" :width="200" shadow="md">
+            <Menu.Target>
+              <UnstyledButton :p="4" bdrs="xl" :aria-label="displayName || t('nav.account')">
+                <Avatar
+                  size="sm"
+                  color="court"
+                  :name="displayName || undefined"
+                  :alt="displayName"
+                />
+              </UnstyledButton>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item :component="NuxtLinkLocale" to="/settings">
+                <template #leftSection><Icon name="lucide:settings" size="16" /></template>
+                {{ t("nav.settings") }}
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item :disabled="isPending" @click="signOut()">
+                <template #leftSection><Icon name="lucide:log-out" size="16" /></template>
+                {{ t("nav.signOut") }}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Group>
+    </Container>
+  </Box>
 </template>
+
+<style module>
+/* Sticky, translucent elevated surface over the page content. */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  background-color: color-mix(in srgb, var(--app-color-elevated) 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+</style>

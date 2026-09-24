@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { Stack, Text, Title } from "@mantine-vue/core";
+
 /**
  * Left half of the auth layout on desktop: a flat vector scene of a hard
  * court seen from the baseline, with a racket resting on the surface. Drawn
- * inline so it uses the Hard Court palette tokens (`--color-court-*`,
- * `--color-surround-*`, `--color-neutral-*`) and needs no image asset.
+ * inline so it uses the Hard Court palette through Mantine CSS variables
+ * (`--mantine-color-court-*`, `--mantine-color-surround-*`,
+ * `--mantine-color-slate-*`) and needs no image asset.
  * Decorative: the SVG is hidden from assistive tech; the headline carries
- * the message.
+ * the message. The layout decides at which breakpoint the panel shows;
+ * `class`/`style` fall through to the root `aside`.
  */
 const { t } = useI18n();
 
@@ -17,12 +21,19 @@ const gripOffsets = Array.from({ length: 11 }, (_, i) => 262 + i * 14);
 </script>
 
 <template>
-  <aside
-    class="relative overflow-hidden bg-surround-700 text-white flex-col justify-between gap-10 p-10 xl:p-14"
+  <Stack
+    component="aside"
+    justify="space-between"
+    :gap="40"
+    pos="relative"
+    bg="surround.7"
+    c="white"
+    :p="{ base: 40, lg: 56 }"
+    style="overflow: hidden"
     :aria-label="t('auth.showcase.ariaLabel')"
   >
     <svg
-      class="absolute inset-0 h-full w-full"
+      :class="$style.scene"
       viewBox="0 0 800 1000"
       preserveAspectRatio="xMidYMax slice"
       aria-hidden="true"
@@ -37,10 +48,10 @@ const gripOffsets = Array.from({ length: 11 }, (_, i) => 262 + i * 14);
       </defs>
 
       <!-- Surround -->
-      <rect width="800" height="1000" fill="var(--color-surround-700)" />
+      <rect width="800" height="1000" fill="var(--mantine-color-surround-7)" />
 
       <!-- Court surface in perspective: near baseline wide, far baseline narrow -->
-      <polygon points="-80,960 880,960 530,330 270,330" fill="var(--color-court-600)" />
+      <polygon points="-80,960 880,960 530,330 270,330" fill="var(--mantine-color-court-6)" />
 
       <g fill="none" stroke="white" stroke-width="3" stroke-opacity="0.75" stroke-linecap="round">
         <!-- doubles sidelines and baselines -->
@@ -91,8 +102,8 @@ const gripOffsets = Array.from({ length: 11 }, (_, i) => 262 + i * 14);
         stroke-width="3"
         stroke-opacity="0.6"
       />
-      <rect x="114" y="504" width="8" height="60" rx="2" fill="var(--color-neutral-900)" />
-      <rect x="678" y="504" width="8" height="60" rx="2" fill="var(--color-neutral-900)" />
+      <rect x="114" y="504" width="8" height="60" rx="2" fill="var(--mantine-color-slate-8)" />
+      <rect x="678" y="504" width="8" height="60" rx="2" fill="var(--mantine-color-slate-8)" />
 
       <!--
         Racket resting on the near court. Drawn upright around (0,0) = hoop
@@ -105,7 +116,7 @@ const gripOffsets = Array.from({ length: 11 }, (_, i) => 262 + i * 14);
         <!-- shadow on the surface -->
         <g
           transform="translate(14 18)"
-          fill="var(--color-court-900)"
+          fill="var(--mantine-color-court-9)"
           opacity="0.4"
           filter="url(#auth-racket-shadow)"
         >
@@ -125,7 +136,12 @@ const gripOffsets = Array.from({ length: 11 }, (_, i) => 262 + i * 14);
           <line v-for="y in stringOffsets" :key="`s-h-${y}`" x1="-84" :y1="y" x2="84" :y2="y" />
         </g>
 
-        <g fill="none" stroke="var(--color-neutral-900)" stroke-width="10" stroke-linecap="round">
+        <g
+          fill="none"
+          stroke="var(--mantine-color-slate-8)"
+          stroke-width="10"
+          stroke-linecap="round"
+        >
           <!-- hoop, open between the throat arms -->
           <path d="M37.5 92.7 A80 105 0 1 0 -37.5 92.7" />
           <!-- yoke -->
@@ -135,24 +151,34 @@ const gripOffsets = Array.from({ length: 11 }, (_, i) => 262 + i * 14);
         </g>
 
         <!-- shaft and grip -->
-        <rect x="-11" y="178" width="22" height="76" rx="4" fill="var(--color-neutral-900)" />
-        <rect x="-14" y="250" width="28" height="168" rx="6" fill="var(--color-neutral-800)" />
-        <g stroke="var(--color-neutral-600)" stroke-width="2" stroke-linecap="round">
+        <rect x="-11" y="178" width="22" height="76" rx="4" fill="var(--mantine-color-slate-8)" />
+        <rect x="-14" y="250" width="28" height="168" rx="6" fill="var(--mantine-color-slate-7)" />
+        <g stroke="var(--mantine-color-slate-5)" stroke-width="2" stroke-linecap="round">
           <line v-for="y in gripOffsets" :key="`g-${y}`" x1="-12" :y1="y" x2="12" :y2="y + 7" />
         </g>
-        <rect x="-16" y="412" width="32" height="16" rx="5" fill="var(--color-neutral-950)" />
+        <rect x="-16" y="412" width="32" height="16" rx="5" fill="var(--mantine-color-slate-9)" />
       </g>
     </svg>
 
-    <div class="relative max-w-[26rem]">
-      <h2 class="font-display font-bold text-3xl xl:text-4xl tracking-[-0.015em] leading-[1.1]">
+    <Stack gap="md" pos="relative" maw="26rem">
+      <Title :order="2" :fz="{ base: 30, lg: 36 }" lh="1.1" lts="-0.015em" c="white">
         {{ t("auth.showcase.title") }}
-      </h2>
-      <p class="mt-4 text-[15px] leading-relaxed text-surround-100 max-w-prose">
+      </Title>
+      <Text :fz="15" lh="1.625" c="surround.1" maw="65ch">
         {{ t("auth.showcase.description") }}
-      </p>
-    </div>
+      </Text>
+    </Stack>
 
-    <p class="relative text-sm text-court-100">{{ t("app.location") }}</p>
-  </aside>
+    <Text size="sm" c="court.1" pos="relative">{{ t("app.location") }}</Text>
+  </Stack>
 </template>
+
+<style module>
+/* The scene fills the panel behind the copy; overflow/positioning is not a style prop. */
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>

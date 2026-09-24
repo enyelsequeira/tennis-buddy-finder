@@ -4,15 +4,31 @@
  * `pages/(app)/players/[id].vue` only once the Convex client is authenticated,
  * so both queries subscribe with a token.
  */
+import { h } from "vue";
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
 import type { Id } from "@tennis-buddy-finder/backend/convex/_generated/dataModel";
-import type { DropdownMenuItem } from "@nuxt/ui";
+import {
+  ActionIcon,
+  Avatar,
+  Badge,
+  Button,
+  EmptyState,
+  Flex,
+  Group,
+  Menu,
+  Modal,
+  Paper,
+  Stack,
+  Text,
+  Title,
+} from "@mantine-vue/core";
+import { notifications } from "@mantine-vue/notifications";
+import { Icon, NuxtLinkLocale } from "#components";
 
 const props = defineProps<{ userId: Id<"users"> }>();
 
 const { t } = useI18n();
 const localePath = useLocalePath();
-const toast = useToast();
 
 const {
   data: profile,
@@ -61,27 +77,19 @@ const facts = computed(() => {
 
 const blockOpen = ref(false);
 
-const menu = computed<DropdownMenuItem[]>(() => [
-  {
-    label: t("playerPage.block"),
-    icon: "i-lucide-ban",
-    color: "error",
-    onSelect: () => {
-      blockOpen.value = true;
-    },
-  },
-]);
-
 const { mutate: block, isPending: isBlocking } = useConvexMutation(api.blocks.block);
 
 async function confirmBlock() {
   try {
     await block({ userId: props.userId });
     blockOpen.value = false;
-    toast.add({ title: t("playerPage.blocked"), icon: "i-lucide-ban" });
+    notifications.show({
+      message: t("playerPage.blocked"),
+      icon: h(Icon, { name: "lucide:ban", size: 18 }),
+    });
     await navigateTo(localePath("/find"));
   } catch {
-    toast.add({ title: t("playerPage.blockError"), color: "error" });
+    notifications.show({ message: t("playerPage.blockError"), color: "red" });
   }
 }
 </script>
@@ -89,118 +97,128 @@ async function confirmBlock() {
 <template>
   <PlayerProfileSkeleton v-if="isPending" />
 
-  <UEmpty
-    v-else-if="error || !profile"
-    icon="i-lucide-user-round-x"
-    :title="t('playerPage.notFoundTitle')"
-    :description="t('playerPage.notFoundDescription')"
-    :actions="[
-      {
-        label: t('playerPage.backToFind'),
-        icon: 'i-lucide-arrow-left',
-        color: 'neutral',
-        variant: 'outline',
-        to: localePath('/find'),
-      },
-    ]"
-    :ui="{ root: 'py-16 rounded-2xl bg-elevated ring ring-default' }"
-  />
+  <Paper v-else-if="error || !profile" withBorder radius="xl" py="xl">
+    <EmptyState
+      :title="t('playerPage.notFoundTitle')"
+      :description="t('playerPage.notFoundDescription')"
+    >
+      <template #icon><Icon name="lucide:user-round-x" size="40" /></template>
+      <EmptyState.Actions>
+        <Button variant="default" :component="NuxtLinkLocale" to="/find">
+          <template #leftSection><Icon name="lucide:arrow-left" size="16" /></template>
+          {{ t("playerPage.backToFind") }}
+        </Button>
+      </EmptyState.Actions>
+    </EmptyState>
+  </Paper>
 
-  <div v-else class="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-    <section
-      class="rounded-2xl bg-elevated ring ring-default p-5 space-y-4 lg:w-80 lg:shrink-0"
+  <Flex
+    v-else
+    :direction="{ base: 'column', md: 'row' }"
+    :align="{ base: 'stretch', md: 'flex-start' }"
+    :gap="{ base: 'md', md: 'lg' }"
+  >
+    <Paper
+      component="section"
+      withBorder
+      radius="xl"
+      p="lg"
+      :w="{ base: '100%', md: 320 }"
+      :class="$style.identity"
       :aria-label="profile.displayName"
     >
-      <div class="flex items-start gap-4">
-        <UAvatar
-          :alt="profile.displayName"
-          :text="profile.displayName.charAt(0)"
-          class="shrink-0 bg-accented"
-          :ui="{ root: 'size-18 text-3xl', fallback: 'text-muted font-semibold' }"
-        />
-        <div class="min-w-0 flex-1 space-y-1">
-          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h1
-              class="font-display font-bold text-[22px] leading-tight text-highlighted break-words"
-            >
-              {{ profile.displayName }}
-            </h1>
-            <NtrpBadge :rating="profile.ntrp" />
-          </div>
-          <p class="text-xs text-muted">{{ meta }}</p>
-          <p class="text-xs text-muted flex items-start gap-1">
-            <UIcon name="i-lucide-map-pin" class="size-3.5 shrink-0 mt-0.5" />
-            <span>{{ location }}</span>
-          </p>
-        </div>
+      <Stack gap="md">
+        <Group gap="md" align="flex-start" wrap="nowrap">
+          <Avatar :size="72" radius="xl" variant="light" color="gray" :alt="profile.displayName">
+            {{ profile.displayName.charAt(0) }}
+          </Avatar>
+          <Stack :gap="4" flex="1" miw="0">
+            <Group gap="xs" align="center">
+              <Title :order="1" :fz="22" lh="1.2" :class="$style.name">{{
+                profile.displayName
+              }}</Title>
+              <NtrpBadge :rating="profile.ntrp" />
+            </Group>
+            <Text size="xs" c="dimmed">{{ meta }}</Text>
+            <Group :gap="4" align="flex-start" wrap="nowrap" c="dimmed">
+              <Icon name="lucide:map-pin" size="14" :class="$style.pin" />
+              <Text size="xs" c="dimmed">{{ location }}</Text>
+            </Group>
+          </Stack>
 
-        <UDropdownMenu v-if="!isMe" :items="menu" :content="{ align: 'end' }">
-          <UButton
-            icon="i-lucide-ellipsis-vertical"
-            color="neutral"
-            variant="ghost"
-            :aria-label="t('playerPage.menu')"
-          />
-        </UDropdownMenu>
-      </div>
+          <Menu v-if="!isMe" position="bottom-end" shadow="md">
+            <Menu.Target>
+              <ActionIcon variant="subtle" color="gray" :aria-label="t('playerPage.menu')">
+                <Icon name="lucide:ellipsis-vertical" size="18" />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item color="red" @click="blockOpen = true">
+                <template #leftSection><Icon name="lucide:ban" size="16" /></template>
+                {{ t("playerPage.block") }}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
 
-      <p v-if="profile.bio" class="text-sm text-default max-w-prose whitespace-pre-line">
-        {{ profile.bio }}
-      </p>
+        <Text v-if="profile.bio" size="sm" maw="65ch" style="white-space: pre-line">
+          {{ profile.bio }}
+        </Text>
 
-      <ul class="flex flex-wrap gap-2">
-        <li v-for="fact in facts" :key="fact">
-          <UBadge color="neutral" variant="subtle" :label="fact" />
-        </li>
-      </ul>
+        <Group gap="xs">
+          <Badge v-for="fact in facts" :key="fact" variant="light" color="gray">{{ fact }}</Badge>
+        </Group>
 
-      <div
-        v-if="isMe"
-        class="rounded-lg bg-default ring ring-default p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <p class="text-xs text-muted">{{ t("playerPage.thisIsYou") }}</p>
-        <UButton
-          :label="t('playerPage.editProfile')"
-          icon="i-lucide-pencil"
-          color="neutral"
-          variant="outline"
-          size="sm"
-          to="/settings"
-          class="shrink-0"
-        />
-      </div>
-    </section>
+        <Paper v-if="isMe" radius="md" bg="var(--mantine-color-body)" withBorder p="sm">
+          <Group justify="space-between" gap="sm">
+            <Text size="xs" c="dimmed">{{ t("playerPage.thisIsYou") }}</Text>
+            <Button variant="default" size="xs" :component="NuxtLinkLocale" to="/settings">
+              <template #leftSection><Icon name="lucide:pencil" size="14" /></template>
+              {{ t("playerPage.editProfile") }}
+            </Button>
+          </Group>
+        </Paper>
+      </Stack>
+    </Paper>
 
-    <div class="flex-1 min-w-0 space-y-3">
-      <h2 class="font-display font-bold text-sm md:text-[15px] text-highlighted">
-        {{ t("playerPage.openSlots") }}
-      </h2>
+    <Stack gap="sm" flex="1" miw="0">
+      <Title :order="2" :fz="{ base: 14, sm: 15 }">{{ t("playerPage.openSlots") }}</Title>
       <ComingSoon />
-    </div>
+    </Stack>
 
-    <UModal
-      v-model:open="blockOpen"
+    <Modal
+      :opened="blockOpen"
       :title="t('playerPage.blockTitle', { name: profile.displayName })"
-      :description="t('playerPage.blockDescription')"
+      centered
+      @close="blockOpen = false"
     >
-      <template #footer="{ close }">
-        <div class="flex w-full justify-end gap-2">
-          <UButton
-            :label="t('playerPage.cancel')"
-            color="neutral"
-            variant="outline"
-            :disabled="isBlocking"
-            @click="close"
-          />
-          <UButton
-            :label="t('playerPage.blockConfirm')"
-            icon="i-lucide-ban"
-            color="error"
-            :loading="isBlocking"
-            @click="confirmBlock"
-          />
-        </div>
-      </template>
-    </UModal>
-  </div>
+      <Stack gap="md">
+        <Text size="sm" c="dimmed">{{ t("playerPage.blockDescription") }}</Text>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="default" :disabled="isBlocking" @click="blockOpen = false">
+            {{ t("playerPage.cancel") }}
+          </Button>
+          <Button color="red" :loading="isBlocking" @click="confirmBlock">
+            <template #leftSection><Icon name="lucide:ban" size="16" /></template>
+            {{ t("playerPage.blockConfirm") }}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  </Flex>
 </template>
+
+<style module>
+.identity {
+  flex-shrink: 0;
+}
+
+.name {
+  overflow-wrap: anywhere;
+}
+
+.pin {
+  flex-shrink: 0;
+  margin-top: rem(2px);
+}
+</style>

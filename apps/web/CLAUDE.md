@@ -33,15 +33,15 @@ Deployed to Cloudflare Workers via Alchemy (`packages/infra/alchemy.run.ts`).
 
 ```
 app/
-  app.vue              root: NuxtAnnouncer/RouteAnnouncer/LoadingIndicator > UApp > NuxtLayout > NuxtPage
-  app.config.ts        @nuxt/ui theme (primary: emerald, neutral: neutral)
-  assets/css/main.css  `@import "tailwindcss"; @import "@nuxt/ui";` — add global CSS here only
+  app.vue              root: NuxtAnnouncer/RouteAnnouncer/LoadingIndicator > MantineProvider > Notifications + NuxtLayout > NuxtPage
+  theme.ts             MantineThemeOverride: Hard Court colours (court, surround, ball, slate), fonts, radius
+  assets/css/main.css  global CSS only (body/text/border vars, elevated Paper surface); never component styling
   pages/               file-based routing in route groups; the "(group)" segment is not part of the URL
     (marketing)/       index.vue (landing, layout "landing", guest), demo.vue
     (auth)/            login.vue, register.vue (layout "auth", guest)
     (app)/             find.vue, calendar.vue, requests.vue, messages/index.vue, settings.vue (default layout, auth + onboarded)
     onboarding.vue     layout "auth" with `authWide`, middleware auth
-  layouts/             default.vue = app shell (<AppHeader /> at md+, <AppTabBar /> below, UMain > UContainer)
+  layouts/             default.vue = app shell (<AppHeader /> from Mantine `sm`, <AppTabBar /> below, Container 72rem)
                        auth.vue = centred column (400px, 560px with page meta `authWide`); landing.vue = marketing chrome
   components/          auto-imported, PascalCase, name = file name (AppHeader.vue -> <AppHeader />)
                        shell: AppHeader, AppTabBar, AppWordmark, LocaleSwitcher, ComingSoon (placeholder body)
@@ -75,8 +75,9 @@ public/                static files (favicon, robots.txt)
   the full catalogue). Expected fits in this app: `useInfiniteScroll` (search results),
   `useTextareaAutosize` (message composer), `useDebounceFn` / `watchDebounced` (filters),
   `useOnline` (connection errors), `onClickOutside`, `useScrollLock`, `useBreakpoints`.
-  Do not use VueUse for what Nuxt or Nuxt UI already own: head/SEO (`useSeoMeta`),
-  colour mode (`UColorModeButton`), toasts, overlays, and dates (`useLisbonTime`).
+  Do not use VueUse for what Nuxt or Mantine already own: head/SEO (`useSeoMeta`),
+  colour mode (`useAppColorScheme`), toasts (`notifications`), overlays (`Modal`/`Drawer` +
+  `useDisclosure` from `@mantine-vue/hooks`), and dates (`useLisbonTime`).
 - Page-level options go in `definePageMeta({ layout, middleware, name })`, not in props.
 - Shared client state across components/pages: `useState("key", () => init)`. Do not
   reach for Pinia; Convex queries are already the reactive source of truth for server data.
@@ -102,14 +103,15 @@ and has no URL prefix; `en` lives under `/en/...` (`@nuxtjs/i18n`, strategy
   with a count: `t("slot.openCount", n)`. Interpolation uses named params:
   `t("footer.copyright", { year })`.
 - Write pt-PT, not pt-BR: "ténis", "ecrã", "aceite", "campo" for court, informal "tu".
-- Links: `to="/register"` on `UButton` / `ULink` / `UNavigationMenu` is localized
-  automatically by Nuxt UI. Use `useLocalePath()` for programmatic `navigateTo`.
+- Links: render Mantine components with `:component="NuxtLinkLocale"` (import it from
+  `#components`) and a raw `to="/register"`; `NuxtLinkLocale` localizes the path itself.
+  Use `useLocalePath()` only for programmatic `navigateTo`.
 - Language switching lives only in `LocaleSwitcher.vue`: `<SwitchLocalePathLink>` per
   locale plus `setLocaleCookie(code)` on click (browser detection reads that cookie on
   `/`; without updating it a switch to `pt` bounces back to `/en`). Docs:
   https://i18n.nuxtjs.org/docs/components/switch-locale-path-link
-- Nuxt UI's own component strings come from `@nuxt/ui/locale`, wired on
-  `<UApp :locale>` in `app.vue` together with `useLocaleHead` for `lang` and hreflang.
+- `useLocaleHead` in `app.vue` sets `lang` and hreflang. Mantine components have no built-in
+  strings; every label they show comes from `t()`.
 - Dates follow the locale through `useLisbonTime()` (dayjs `pt` and `en` locales are
   loaded there; format patterns are the `dates.*` keys). Do not format dates elsewhere.
 - Typed keys: `experimental.typedOptionsAndMessages` is on, so a wrong key fails
@@ -117,23 +119,112 @@ and has no URL prefix; `en` lives under `/en/...` (`@nuxtjs/i18n`, strategy
 - `i18n.baseUrl` (hreflang/canonical origin) reads `NUXT_PUBLIC_SITE_URL`, falling back
   to localhost. Set it in production once the domain is decided.
 
-## Nuxt UI v4
+## mantine-vue (UI library)
 
-- Use `U*` components exclusively (`UButton`, `UCard`, `UInput`, `UForm`, `UFormField`,
-  `USelect`, `UCalendar`, `UModal`, `UAlert`, `USkeleton`, `UEmpty`, `UHeader`,
-  `UNavigationMenu`, `UContainer`, `UMain`, `UColorModeButton`, ...). Do not add another
-  component library or a second icon set.
-- Icons: `i-lucide-<name>` (e.g. `icon="i-lucide-trash-2"`, `<UIcon name="i-lucide-map-pin" />`).
-- Theming: semantic color aliases in `app/app.config.ts` (`ui.colors.primary/neutral`,
-  can also set `secondary/success/warning/error/info`). Component-level defaults go
-  under `ui.<component>` in the same file; per-instance overrides via the `:ui` prop.
-- Styling: Tailwind v4 utilities and Nuxt UI semantic classes (`text-muted`,
-  `text-success`, `text-error`, `bg-elevated`, `border-default`). Avoid custom CSS
-  unless a utility genuinely does not exist.
-- Toasts: `const toast = useToast(); toast.add({ title, color: "error" })` (needs `UApp`, already in `app.vue`).
-- Types: `import type { NavigationMenuItem, FormSubmitEvent } from "@nuxt/ui"`.
-- Slots/variants for any component: check `node_modules/@nuxt/ui` docs or the generated
-  theme in `.nuxt/ui/` before guessing prop names.
+mantine-vue is a component-for-component port of Mantine (React) for Vue 3. Docs:
+https://mantine-vue.dev (client rendered; the markdown source is in the GitHub repo
+`mantine-vue/mantine-vue` under `apps/mantine.dev/src/pages/**/*.mdx`) and https://mantine.dev
+for the original. Prop names are the Mantine ones; the authoritative list is the typings in
+`node_modules/@mantine-vue/core/lib/components/<Name>/<Name>.types.d.ts`. Read them before
+guessing a prop.
+
+### Golden rule: components + style props before custom CSS
+
+Before writing a `div` + CSS, reach for a Mantine component and its props. Layout, spacing,
+colour and typography are expressible as props; no class required.
+
+- ❌ `<div class="row">` + `.row { display: flex; gap: 12px }` → ✅ `<Group gap="sm">`
+- ❌ `<h1 class="title">` + font CSS → ✅ `<Title :order="1">` (display font is on the theme)
+- ❌ media-query CSS to hide on mobile → ✅ `hiddenFrom="sm"` / `visibleFrom="sm"`
+- ❌ `<div class="card">` → ✅ `<Paper withBorder radius="xl" p="lg">` (elevated surface)
+
+**When a `<style module>` IS justified**: `@keyframes`, `background-image`/SVG textures,
+pseudo-elements, complex `:hover`/`:has`, scroll-snap/overflow, sticky/fixed chrome, grid
+templates props can't express. postcss-preset-mantine is on: use `light-dark()`, `rem()`
+and `@media (min-width: $mantine-breakpoint-sm)`. Colours only via Mantine vars
+(`var(--mantine-color-court-6)`, `var(--mantine-color-body)`, `var(--mantine-color-text)`,
+`var(--mantine-color-dimmed)`, `var(--mantine-color-default-border)`,
+`var(--app-color-elevated)`), spacing/radius via `var(--mantine-spacing-md)` /
+`var(--mantine-radius-lg)`. Never hardcode hex. Never re-create spacing/flex in CSS.
+
+### Imports
+
+No auto-import: `import { Button, Group, Stack, Text, Title } from "@mantine-vue/core"` in
+every SFC. Compound parts are static members used as `<Card.Section>`, `<Menu.Target>`,
+`<Radio.Group>`, `<Radio.Card>`, `<Checkbox.Group>`, `<AppShell.Header>`, `<EmptyState.Actions>`.
+
+### Style props (on every component; all accept `{ base, xs, sm, md, lg, xl }` objects)
+
+| Prop                          | CSS                       | Prop                              | CSS                              |
+| ----------------------------- | ------------------------- | --------------------------------- | -------------------------------- |
+| `m mt mb ml mr mx my ms me`   | margin                    | `p pt pb pl pr px py ps pe`       | padding                          |
+| `w miw maw`                   | width                     | `h mih mah`                       | height                           |
+| `bg`                          | background (theme colour) | `c`                               | colour (`"dimmed"`, `"court.6"`) |
+| `bd`                          | border                    | `bdrs`                            | border-radius                    |
+| `fz fw ff lh ta tt td fs lts` | typography                | `pos top left right bottom inset` | position                         |
+| `display flex opacity`        |                           | `hiddenFrom visibleFrom`          | responsive visibility            |
+
+Numbers become rem; `"md"`, `"court.6"` resolve on the theme. Bind non-strings with `:`.
+Breakpoints: xs 576, sm 768, md 992, lg 1200, xl 1408 px (Tailwind `md:` ≈ Mantine `sm`).
+
+### Theme (`app/theme.ts`)
+
+- Colours: `court` (primary, default when `color` is omitted), `surround` (green, success,
+  matched), `ball` (optic yellow, **only** open slots / the ball dot), `red` (errors), `gray`
+  (neutral buttons/badges), `slate.N` text/border shades. Shade 5 is primary in light, 4 in dark.
+- Fonts: `Title` = Bricolage Grotesque 700; body = Instrument Sans (`ff="heading"` opts a `Text` in).
+- Radius: xs .25rem, sm .375rem, md .5rem (default), lg .75rem, xl 1rem. Cards are `xl`.
+- **NO GRADIENTS — ever.** No `variant="gradient"`, no CSS gradients. Flat colours only.
+- Variants: `filled` (default), `light` (tinted), `outline`, `default` (neutral bordered),
+  `subtle` (ghost), `transparent`. Button `fullWidth`, icons in `#leftSection`/`#rightSection`.
+- Colour scheme: `useAppColorScheme()` → `{ scheme, setScheme }` (cookie, SSR-safe). Never call
+  `useMantineColorScheme` directly.
+
+### Icons: `@nuxt/icon` (Iconify)
+
+`<Icon name="lucide:map-pin" size="18" />` (global component). Only the `lucide` set, plus
+`simple-icons` for the two brand marks on login/register. In `<script>` (notification icons,
+`Menu.Item` sections): `import { Icon } from "#components"` and `h(Icon, { name, size })`.
+Coloured icon chips: `<ThemeIcon variant="light" color="surround">`.
+
+### Notifications
+
+```ts
+import { notifications } from "@mantine-vue/notifications";
+notifications.show({
+  message: t("settings.profileUpdated"),
+  color: "surround",
+  icon: h(Icon, { name: "lucide:check", size: 18 }),
+});
+notifications.show({ message: t("onboarding.errors.generic"), color: "red" });
+```
+
+`message` is required; `title` is optional. `<Notifications />` is mounted once in `app.vue`.
+
+### Component cheat-sheet
+
+**Layout:** `Stack`, `Group`, `Flex`, `Grid` + `Grid.Col`, `SimpleGrid`, `Box`, `Center`,
+`Container` (`size="72rem"`), `Space`, `Divider`, `Paper`, `Card` + `Card.Section`, `AppShell`,
+`ScrollArea`, `AspectRatio`. **Typography:** `Title`, `Text`, `Anchor`, `Highlight`, `List`,
+`VisuallyHidden`. **Inputs:** `TextInput`, `PasswordInput`, `Textarea`, `NumberInput`, `Select`,
+`MultiSelect`, `Checkbox` (+ `.Group`, `.Card`), `Radio` (+ `.Group`, `.Card`), `Switch`,
+`SegmentedControl`, `Slider`, `Rating`, `PinInput`, `Fieldset`. **Actions:** `Button`,
+`ActionIcon`, `CloseButton`, `UnstyledButton`, `Burger`. **Feedback/overlays:** `Alert`,
+`Loader`, `LoadingOverlay`, `Progress`, `Skeleton`, `Modal`, `Drawer`, `Tooltip`, `Popover`,
+`Menu`, `HoverCard`. **Data:** `Badge`, `Avatar`, `Indicator`, `ThemeIcon`, `Table`,
+`Accordion`, `Tabs`, `Timeline`, `Stepper`, `EmptyState`, `Pagination`, `NavLink`, `Image`.
+Full list: `ls node_modules/@mantine-vue/core/lib/components`.
+
+### Other `@mantine-vue/*` packages (same version as core)
+
+Installed: `form`, `notifications`, `hooks` (`useDisclosure`, `useMediaQuery`, `useHotkeys`,
+`useClipboard`, ...), `utils`. Available when a slice needs them (install + import the
+package's `styles.css` after the core styles in `nuxt.config.ts` `css`):
+`@mantine-vue/dates` (Calendar, DatePicker, TimeInput, dayjs-based, `DatesProvider` for the
+`pt` locale) and `@mantine-vue/schedule` (day/week/month/year views with events, drag and drop)
+for the calendar slice; `@mantine-vue/modals` (`ModalsProvider`, `modals.openConfirmModal`);
+`@mantine-vue/nprogress`; `@mantine-vue/carousel`; `@mantine-vue/dropzone`; `@mantine-vue/spotlight`;
+`@mantine-vue/charts`.
 
 ## Convex usage
 
@@ -162,8 +253,7 @@ await createTodo({ text }); // returns the mutation result, throws on failure
 Rules:
 
 - `data` is `undefined` while loading; always branch on `isPending` / `error` / `data`
-  (see `app/pages/todos.vue` for the canonical loading -> error -> empty -> list pattern
-  with `USkeleton`, `UAlert`, `UEmpty`). The composable's return object itself is never
+  (loading -> error -> empty -> list with `Skeleton`, `Alert`, `EmptyState`). The composable's return object itself is never
   `undefined`, only `data.value` is.
 - Queries subscribe on the client and are prefetched on the server for SSR; pass
   `{ server: false }` as the options arg to skip SSR for a query.
@@ -181,35 +271,39 @@ Rules:
 
 ## Forms and validation
 
-- Use `UForm :schema :state @submit` with `UFormField name=...` wrappers; validation
-  runs before `@submit` fires and `event.data` is the parsed output.
+- Use `useForm` from `@mantine-vue/form` (no dependency on core). Validation runs before the
+  submit handler fires; `form.onSubmit(handler)` returns the `@submit` listener.
 - Schemas are zod v4 (`import * as z from "zod"`; use `z.email()`, `z.url()` etc., not
-  `z.string().email()`). Define the schema once; when a Convex mutation validates the
-  same shape, put the zod schema in the backend package and import it here rather than
-  duplicating it.
+  `z.string().email()`) wired with `zodResolver(schema)`. Define the schema once; when a
+  Convex mutation validates the same shape, put the zod schema in the backend package and
+  import it here rather than duplicating it. Translated messages: build the schema with `t`
+  (`createLoginSchema(t)`) or map issues in a custom `validate` function.
+- Every input binds with `v-bind="form.getInputProps('field')"`, exactly as the
+  mantine-vue form docs show (`{ type: "checkbox" }` for a single checkbox, `{ type: "radio",
+value }` for a standalone radio). No adapters, no `useField`, no `v-model` on form fields.
+  Set `validateInputOnBlur: true` to show errors as users leave a field. `form.values.value`,
+  `form.setFieldValue`, `form.errors.value` for everything else.
 
 ```vue
 <script setup lang="ts">
 import * as z from "zod";
-import type { FormSubmitEvent } from "@nuxt/ui";
+import { useForm, zodResolver } from "@mantine-vue/form";
+import { Button, Stack, TextInput } from "@mantine-vue/core";
 
-const schema = z.object({
-  city: z.string().min(2),
-  level: z.enum(["beginner", "intermediate", "advanced"]),
+const schema = z.object({ city: z.string().min(2) });
+const form = useForm({ initialValues: { city: "" }, validate: zodResolver(schema) });
+const handleSubmit = form.onSubmit(async (values) => {
+  await mutate(values);
 });
-type Schema = z.output<typeof schema>;
-const state = reactive<Partial<Schema>>({});
-
-async function onSubmit(event: FormSubmitEvent<Schema>) {
-  await mutate(event.data);
-}
 </script>
 
 <template>
-  <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-    <UFormField name="city" label="City" required><UInput v-model="state.city" /></UFormField>
-    <UButton type="submit" :loading="isPending">Save</UButton>
-  </UForm>
+  <form @submit="handleSubmit">
+    <Stack gap="md">
+      <TextInput label="City" withAsterisk v-bind="form.getInputProps('city')" />
+      <Button type="submit" :loading="isPending">Save</Button>
+    </Stack>
+  </form>
 </template>
 ```
 
@@ -218,21 +312,21 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 Better Auth runs inside Convex (`@convex-dev/better-auth`, `packages/backend/convex/auth.ts`)
 and is reached through a same-origin proxy so the session cookie is first-party.
 
-| File                                | Role                                                                                                                                                        |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/utils/auth-client.ts`          | `authClient` from `better-auth/vue` with the `convexClient()` plugin. Import it as `import { authClient } from "~/utils/auth-client"`.                      |
-| `server/api/auth/[...all].ts`       | Nitro catch-all that proxies `/api/auth/*` to `${NUXT_CONVEX_SITE_URL}/api/auth/*` (method, query, body, `Origin`, `Cookie` and `Set-Cookie` pass through). |
-| `app/composables/useAuthSession.ts` | `await useAuthSession()` -> `{ session, isSignedIn }` computed refs, SSR-hydrated via `useFetch`. `AuthSession` type exported alongside.                     |
-| `app/composables/useSignOut.ts`     | `useSignOut()` -> `{ signOut, isPending }`; `signOut()` calls `authClient.signOut()` then `navigateTo(localePath("/login"))`.                               |
-| `app/middleware/auth.ts`            | Named middleware for protected pages: redirects to the localized `/login?redirect=<fullPath>` when signed out.                                              |
-| `app/middleware/guest.ts`           | Named middleware for landing/login/register: redirects to the localized `/find` when signed in.                                                             |
-| `app/middleware/onboarded.ts`       | Named middleware for app pages (after `auth`): a signed-in user with no profile is sent to the localized `/onboarding`.                                     |
-| `app/middleware/admin.ts`           | Named middleware (after `auth`, `onboarded`): anyone whose `user.role` is not `"admin"` is sent to `/find`.                                                |
-| `app/composables/useCurrentUser.ts` | `await useCurrentUser()` -> `{ me, refresh }`; `me` is `Ref<CurrentUser \| null>` from `api.users.me` (`{ user, profile }`), null when signed out.         |
-| `app/composables/useConvexToken.ts` | `fetchConvexToken()` -> Convex JWT or null; server side exchanges the request cookie via `getToken`, client side uses `authClient.convex.token()`.           |
-| `app/composables/useConvexAuthReady.ts` | `useConvexAuthReady()` -> `Ref<boolean>`, true once the Convex client holds a token for the session. Only the plugin writes it.                         |
-| `app/plugins/convex-auth.client.ts` | Client-only plugin that watches the session id and calls `convex.setAuth(fetchAccessToken, onChange)` / `convex.client.clearAuth()`; drives `useConvexAuthReady`. |
-| `app/plugins/auth-pageshow.client.ts` | Client-only bfcache guard: on `pageshow` with `persisted`, re-checks the session and re-applies the page's `auth` / `guest` guard (no middleware runs on a back/forward cache restore).                    |
+| File                                    | Role                                                                                                                                                                                    |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/utils/auth-client.ts`              | `authClient` from `better-auth/vue` with the `convexClient()` plugin. Import it as `import { authClient } from "~/utils/auth-client"`.                                                  |
+| `server/api/auth/[...all].ts`           | Nitro catch-all that proxies `/api/auth/*` to `${NUXT_CONVEX_SITE_URL}/api/auth/*` (method, query, body, `Origin`, `Cookie` and `Set-Cookie` pass through).                             |
+| `app/composables/useAuthSession.ts`     | `await useAuthSession()` -> `{ session, isSignedIn }` computed refs, SSR-hydrated via `useFetch`. `AuthSession` type exported alongside.                                                |
+| `app/composables/useSignOut.ts`         | `useSignOut()` -> `{ signOut, isPending }`; `signOut()` calls `authClient.signOut()` then `navigateTo(localePath("/login"))`.                                                           |
+| `app/middleware/auth.ts`                | Named middleware for protected pages: redirects to the localized `/login?redirect=<fullPath>` when signed out.                                                                          |
+| `app/middleware/guest.ts`               | Named middleware for landing/login/register: redirects to the localized `/find` when signed in.                                                                                         |
+| `app/middleware/onboarded.ts`           | Named middleware for app pages (after `auth`): a signed-in user with no profile is sent to the localized `/onboarding`.                                                                 |
+| `app/middleware/admin.ts`               | Named middleware (after `auth`, `onboarded`): anyone whose `user.role` is not `"admin"` is sent to `/find`.                                                                             |
+| `app/composables/useCurrentUser.ts`     | `await useCurrentUser()` -> `{ me, refresh }`; `me` is `Ref<CurrentUser \| null>` from `api.users.me` (`{ user, profile }`), null when signed out.                                      |
+| `app/composables/useConvexToken.ts`     | `fetchConvexToken()` -> Convex JWT or null; server side exchanges the request cookie via `getToken`, client side uses `authClient.convex.token()`.                                      |
+| `app/composables/useConvexAuthReady.ts` | `useConvexAuthReady()` -> `Ref<boolean>`, true once the Convex client holds a token for the session. Only the plugin writes it.                                                         |
+| `app/plugins/convex-auth.client.ts`     | Client-only plugin that watches the session id and calls `convex.setAuth(fetchAccessToken, onChange)` / `convex.client.clearAuth()`; drives `useConvexAuthReady`.                       |
+| `app/plugins/auth-pageshow.client.ts`   | Client-only bfcache guard: on `pageshow` with `persisted`, re-checks the session and re-applies the page's `auth` / `guest` guard (no middleware runs on a back/forward cache restore). |
 
 Rules:
 
@@ -244,7 +338,7 @@ Rules:
   onboarding uses `"auth"` alone. Guest-only pages (landing, login, register):
   `definePageMeta({ middleware: "guest" })`. Do not gate pages with ad-hoc `v-if` checks.
 - Current user (`users` row plus profile) for guards and the shell: `const { me } = await
-  useCurrentUser()`. It reads `api.users.me` over an authenticated `ConvexHttpClient`, so it
+useCurrentUser()`. It reads `api.users.me` over an authenticated `ConvexHttpClient`, so it
   is correct during SSR and on every client navigation. For live data on a page use
   `useConvexQuery(api.users.me, {}, { server: false })` instead.
 - Mutations need the WebSocket client to hold a token: gate submit buttons on

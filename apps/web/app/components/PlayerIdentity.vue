@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Avatar, Group, Stack, Text } from "@mantine-vue/core";
 import type { SlotPlayer } from "~/types/slots";
 
 const props = defineProps<{
@@ -18,21 +19,26 @@ const meta = computed(() =>
 </script>
 
 <template>
-  <div class="flex items-center gap-3 min-w-0">
-    <UAvatar
+  <Group gap="sm" wrap="nowrap" :miw="0">
+    <Avatar
       :src="player.avatarUrl"
       :alt="player.displayName"
-      :text="player.displayName.charAt(0)"
-      size="xl"
-      class="shrink-0 bg-accented"
-      :ui="{ fallback: 'text-muted font-semibold' }"
-    />
-    <div class="min-w-0">
-      <div class="flex items-center gap-2">
-        <span class="font-semibold text-highlighted truncate">{{ player.displayName }}</span>
+      :size="40"
+      variant="light"
+      color="gray"
+      flex="0 0 auto"
+    >
+      {{ player.displayName.charAt(0) }}
+    </Avatar>
+    <Stack gap="0" :miw="0">
+      <Group :gap="8" wrap="nowrap">
+        <Text fw="600" truncate :miw="0">{{ player.displayName }}</Text>
         <NtrpBadge :rating="player.ntrp" />
-      </div>
-      <p class="text-xs text-muted truncate">{{ meta }}</p>
-    </div>
-  </div>
+      </Group>
+      <Group :gap="4" wrap="nowrap" c="dimmed">
+        <Icon name="lucide:map-pin" size="12" aria-hidden="true" />
+        <Text size="xs" c="dimmed" truncate :miw="0">{{ meta }}</Text>
+      </Group>
+    </Stack>
+  </Group>
 </template>

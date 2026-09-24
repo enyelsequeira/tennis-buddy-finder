@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Box, Group, Text } from "@mantine-vue/core";
 import type { SlotStatus } from "~/types/slots";
 
 const props = defineProps<{
@@ -15,12 +16,12 @@ const range = computed(() => formatRange(props));
 </script>
 
 <template>
-  <div class="flex items-center gap-2.5 min-h-11">
+  <Group gap="xs" wrap="nowrap" :mih="44">
     <SlotStatusDot :status="status" />
-    <time class="font-display font-bold text-base text-highlighted">{{ range }}</time>
-    <span class="text-sm text-muted truncate">{{ venue ?? t("slot.anyVenue") }}</span>
-    <div v-if="$slots.trailing" class="ms-auto shrink-0">
+    <Text component="time" ff="heading" fw="700">{{ range }}</Text>
+    <Text size="sm" c="dimmed" truncate :miw="0">{{ venue ?? t("slot.anyVenue") }}</Text>
+    <Box v-if="$slots.trailing" ms="auto" flex="0 0 auto">
       <slot name="trailing" />
-    </div>
-  </div>
+    </Box>
+  </Group>
 </template>

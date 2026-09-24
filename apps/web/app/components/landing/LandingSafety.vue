@@ -1,35 +1,49 @@
 <script setup lang="ts">
-import type { PageFeatureProps } from "@nuxt/ui";
+import { Container, SimpleGrid, Stack, Text, ThemeIcon, Title } from "@mantine-vue/core";
 
 const { t } = useI18n();
 
 const ICONS = {
-  verified: "i-lucide-shield-check",
-  noPhone: "i-lucide-phone-off",
-  block: "i-lucide-ban",
-  adults: "i-lucide-id-card",
+  verified: "lucide:shield-check",
+  noPhone: "lucide:phone-off",
+  block: "lucide:ban",
+  adults: "lucide:id-card",
 } as const;
 
-const features = computed<PageFeatureProps[]>(() =>
-  (Object.keys(ICONS) as Array<keyof typeof ICONS>).map((key) => ({
-    icon: ICONS[key],
-    title: t(`safety.items.${key}.title`),
-    description: t(`safety.items.${key}.description`),
-  })),
-);
+const ITEM_KEYS = Object.keys(ICONS) as Array<keyof typeof ICONS>;
 </script>
 
 <template>
-  <UPageSection
+  <Container
     id="safety"
-    :title="t('safety.title')"
-    :description="t('safety.description')"
-    :features="features"
-    class="scroll-mt-16"
-    :ui="{
-      container: 'py-16 sm:py-20 lg:py-24',
-      description: 'max-w-prose mx-auto',
-      features: 'sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8',
-    }"
-  />
+    component="section"
+    size="72rem"
+    :py="{ base: 64, xs: 80, md: 96 }"
+    style="scroll-margin-top: 4rem"
+  >
+    <Stack gap="md" align="center">
+      <Title :order="2" :fz="{ base: 30, xs: 36, md: 48 }" ta="center" textWrap="balance">
+        {{ t("safety.title") }}
+      </Title>
+      <Text :fz="{ base: 'md', xs: 'lg' }" c="dimmed" ta="center" maw="65ch">
+        {{ t("safety.description") }}
+      </Text>
+    </Stack>
+
+    <SimpleGrid
+      :cols="{ base: 1, xs: 2, md: 4 }"
+      :spacing="{ base: 'xl', md: 32 }"
+      :mt="{ base: 40, md: 48 }"
+    >
+      <Stack v-for="key in ITEM_KEYS" :key="key" gap="sm" align="flex-start">
+        <ThemeIcon variant="light" color="surround" size="lg" radius="md">
+          <Icon :name="ICONS[key]" size="20" aria-hidden="true" />
+        </ThemeIcon>
+        <Title :order="3" ff="text" fw="600" fz="md">
+          {{ t(`safety.items.${key}.title`) }}
+        </Title>
+        <Text :fz="15" c="dimmed">{{ t(`safety.items.${key}.description`) }}</Text>
+      </Stack>
+    </SimpleGrid>
+  </Container>
 </template>

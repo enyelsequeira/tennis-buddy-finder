@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button, Divider, Group, Paper, Stack, Text } from "@mantine-vue/core";
 import type { SlotSummary } from "~/types/slots";
 
 const props = defineProps<{
@@ -19,38 +20,36 @@ const duration = computed(() => formatDuration(props.slot));
 </script>
 
 <template>
-  <article
-    class="rounded-2xl bg-elevated ring ring-default p-3.5 flex flex-col gap-3"
+  <Paper
+    component="article"
+    withBorder
+    radius="xl"
+    p="md"
     :aria-label="t('slot.withPlayer', { range, name: slot.player.displayName })"
   >
-    <div class="flex items-center gap-2.5">
-      <SlotStatusDot :status="slot.status" />
-      <time class="font-display font-bold text-base text-highlighted">{{ range }}</time>
-      <span class="text-sm text-muted">{{ duration }}</span>
-    </div>
+    <Stack gap="sm">
+      <Group gap="xs" wrap="nowrap">
+        <SlotStatusDot :status="slot.status" />
+        <Text component="time" ff="heading" fw="700">{{ range }}</Text>
+        <Text size="sm" c="dimmed">{{ duration }}</Text>
+      </Group>
 
-    <PlayerIdentity v-if="!hideIdentity" :player="slot.player" :venue="slot.venue" />
-    <p v-else class="text-sm text-muted">{{ slot.venue ?? t("slot.anyVenue") }}</p>
+      <PlayerIdentity v-if="!hideIdentity" :player="slot.player" :venue="slot.venue" />
+      <Text v-else size="sm" c="dimmed">{{ slot.venue ?? t("slot.anyVenue") }}</Text>
 
-    <USeparator />
+      <Divider />
 
-    <div class="flex items-center justify-between gap-3">
-      <p class="text-sm text-muted">
-        {{ slot.player.age }} · {{ t("player.playingYears", slot.player.yearsPlaying) }}
-      </p>
-      <UButton
-        v-if="slot.status === 'open' && !requested"
-        :label="t('slot.askToPlay')"
-        color="primary"
-        @click="emit('ask', slot)"
-      />
-      <UButton
-        v-else-if="requested"
-        :label="t('slot.requested')"
-        variant="outline"
-        color="neutral"
-        disabled
-      />
-    </div>
-  </article>
+      <Group justify="space-between" gap="sm" wrap="nowrap">
+        <Text size="sm" c="dimmed">
+          {{ slot.player.age }} · {{ t("player.playingYears", slot.player.yearsPlaying) }}
+        </Text>
+        <Button v-if="slot.status === 'open' && !requested" @click="emit('ask', slot)">
+          {{ t("slot.askToPlay") }}
+        </Button>
+        <Button v-else-if="requested" variant="default" disabled>
+          {{ t("slot.requested") }}
+        </Button>
+      </Group>
+    </Stack>
+  </Paper>
 </template>

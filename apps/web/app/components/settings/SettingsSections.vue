@@ -1,7 +1,27 @@
 <script setup lang="ts">
+import {
+  Alert,
+  Anchor,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Divider,
+  Group,
+  SegmentedControl,
+  Skeleton,
+  Stack,
+  Switch,
+  Text,
+  Title,
+  type MantineColorScheme,
+} from "@mantine-vue/core";
+import { notifications } from "@mantine-vue/notifications";
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
 import type { Id } from "@tennis-buddy-finder/backend/convex/_generated/dataModel";
 import type { ProfileInput } from "@tennis-buddy-finder/backend/convex/model/profileSchema";
+import { h } from "vue";
+import { Icon, NuxtLinkLocale } from "#components";
 import type { SlotPlayer } from "~/types/slots";
 
 /**
@@ -10,10 +30,9 @@ import type { SlotPlayer } from "~/types/slots";
  * run over a Convex client that already holds a token.
  */
 const { t } = useI18n();
-const localePath = useLocalePath();
-const toast = useToast();
 const { ageFromBirthDate } = useLisbonTime();
 const { signOut, isPending: isSigningOut } = useSignOut();
+const { scheme, setScheme } = useAppColorScheme();
 
 const { data: me, isPending, error } = useConvexQuery(api.users.me, {}, { server: false });
 const { data: blocked, isPending: blockedPending } = useConvexQuery(
@@ -56,6 +75,8 @@ const facts = computed(() => {
   ];
 });
 
+const checkIcon = () => h(Icon, { name: "lucide:check", size: 18 });
+
 // Profile edit
 const editing = ref(false);
 const { mutate: updateProfile, isPending: isSaving } = useConvexMutation(api.profiles.update);
@@ -66,10 +87,14 @@ async function onProfileSubmit(input: ProfileInput) {
     // `bio: ""` (not `undefined`) so clearing the bio is persisted by the patch.
     await updateProfile({ ...input, bio: input.bio ?? "", birthDate: profile.value.birthDate });
     editing.value = false;
-    toast.add({ title: t("settings.profileUpdated"), icon: "i-lucide-check" });
+    notifications.show({
+      message: t("settings.profileUpdated"),
+      icon: checkIcon(),
+      color: "surround",
+    });
     await refreshNuxtData("current-user");
   } catch {
-    toast.add({ title: t("onboarding.errors.generic"), color: "error" });
+    notifications.show({ message: t("onboarding.errors.generic"), color: "red" });
   }
 }
 
@@ -94,8 +119,21 @@ async function onNotificationsChange(enabled: boolean) {
     await setEmailNotifications({ enabled });
   } catch {
     emailNotifications.value = previous;
-    toast.add({ title: t("settings.saveFailed"), color: "error" });
+    notifications.show({ message: t("settings.saveFailed"), color: "red" });
   }
+}
+
+// Appearance
+const COLOR_SCHEMES = ["light", "dark", "auto"] as const satisfies readonly MantineColorScheme[];
+const schemeItems = computed(() => [
+  { value: "light", label: t("settings.theme.light") },
+  { value: "dark", label: t("settings.theme.dark") },
+  { value: "auto", label: t("settings.theme.system") },
+]);
+
+function onSchemeChange(value: string | number) {
+  const next = COLOR_SCHEMES.find((scheme) => scheme === value);
+  if (next) setScheme(next);
 }
 
 // Blocked players
@@ -106,9 +144,9 @@ async function onUnblock(userId: Id<"users">) {
   unblocking.value = userId;
   try {
     await unblock({ userId });
-    toast.add({ title: t("settings.unblocked"), icon: "i-lucide-check" });
+    notifications.show({ message: t("settings.unblocked"), icon: checkIcon(), color: "surround" });
   } catch {
-    toast.add({ title: t("settings.saveFailed"), color: "error" });
+    notifications.show({ message: t("settings.saveFailed"), color: "red" });
   } finally {
     unblocking.value = null;
   }
@@ -116,47 +154,44 @@ async function onUnblock(userId: Id<"users">) {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <Stack gap="md">
     <!-- Profile -->
-    <UCard>
-      <template #header>
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="font-display font-bold text-[15px] text-highlighted">
-            {{ t("settings.profile") }}
-          </h2>
-          <UButton
-            v-if="profile"
-            :label="editing ? t('settings.cancelEdit') : t('settings.editProfile')"
-            :icon="editing ? 'i-lucide-x' : 'i-lucide-pencil'"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            @click="editing = !editing"
-          />
-        </div>
-      </template>
+    <Card with-border radius="xl" padding="lg">
+      <Card.Section inherit-padding with-border py="sm">
+        <Group justify="space-between" gap="sm" wrap="nowrap">
+          <Title :order="2" :fz="15">{{ t("settings.profile") }}</Title>
+          <Button v-if="profile" variant="default" size="sm" @click="editing = !editing">
+            <template #leftSection>
+              <Icon :name="editing ? 'lucide:x' : 'lucide:pencil'" size="16" />
+            </template>
+            {{ editing ? t("settings.cancelEdit") : t("settings.editProfile") }}
+          </Button>
+        </Group>
+      </Card.Section>
 
-      <div v-if="isPending" class="space-y-3">
-        <div class="flex items-center gap-3">
-          <USkeleton class="size-12 rounded-full" />
-          <div class="space-y-2">
-            <USkeleton class="h-4 w-40" />
-            <USkeleton class="h-3 w-56" />
-          </div>
-        </div>
-        <USkeleton class="h-4 w-full" />
-        <USkeleton class="h-4 w-2/3" />
-      </div>
+      <Stack v-if="isPending" gap="sm" mt="lg">
+        <Group gap="sm" wrap="nowrap">
+          <Skeleton :height="48" circle />
+          <Stack gap="xs">
+            <Skeleton :height="16" :width="160" />
+            <Skeleton :height="12" :width="224" />
+          </Stack>
+        </Group>
+        <Skeleton :height="16" />
+        <Skeleton :height="16" width="66%" />
+      </Stack>
 
-      <UAlert
+      <Alert
         v-else-if="error"
-        color="error"
-        variant="soft"
-        icon="i-lucide-triangle-alert"
+        color="red"
+        variant="light"
+        mt="lg"
         :title="t('onboarding.errors.generic')"
-      />
+      >
+        <template #icon><Icon name="lucide:triangle-alert" size="18" /></template>
+      </Alert>
 
-      <template v-else-if="me && profile && player">
+      <Box v-else-if="me && profile && player" mt="lg">
         <ProfileForm
           v-if="editing"
           :initial="profile"
@@ -166,119 +201,117 @@ async function onUnblock(userId: Id<"users">) {
           @submit="onProfileSubmit"
         />
 
-        <div v-else class="space-y-4">
+        <Stack v-else gap="md" align="flex-start">
           <PlayerIdentity :player="player" :venue="location" />
 
-          <div class="flex flex-wrap gap-1.5">
-            <UBadge v-for="fact in facts" :key="fact" color="neutral" variant="soft">
+          <Group :gap="6">
+            <Badge v-for="fact in facts" :key="fact" variant="light" color="gray">
               {{ fact }}
-            </UBadge>
-          </div>
+            </Badge>
+          </Group>
 
-          <p v-if="profile.bio" class="text-sm text-default max-w-prose whitespace-pre-line">
+          <Text v-if="profile.bio" size="sm" maw="65ch" style="white-space: pre-line">
             {{ profile.bio }}
-          </p>
+          </Text>
 
-          <ULink
-            :to="localePath(`/players/${me.user._id}`)"
-            class="inline-flex items-center gap-1 text-sm font-medium text-primary"
+          <Anchor
+            :component="NuxtLinkLocale"
+            :to="`/players/${me.user._id}`"
+            size="sm"
+            fw="500"
+            display="inline-flex"
+            style="align-items: center; gap: 0.25rem"
           >
             {{ t("settings.publicProfile") }}
-            <UIcon name="i-lucide-arrow-right" class="size-4" />
-          </ULink>
-        </div>
-      </template>
-    </UCard>
+            <Icon name="lucide:arrow-right" size="16" />
+          </Anchor>
+        </Stack>
+      </Box>
+    </Card>
 
     <!-- Notifications -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.notifications") }}
-        </h2>
-      </template>
-      <USwitch
+    <Card with-border radius="xl" padding="lg">
+      <Card.Section inherit-padding with-border py="sm">
+        <Title :order="2" :fz="15">{{ t("settings.notifications") }}</Title>
+      </Card.Section>
+      <Switch
+        mt="lg"
         :model-value="emailNotifications"
         :label="t('settings.emailNotifications')"
         :description="t('settings.emailNotificationsHelp')"
-        :disabled="isPending || !!error"
-        :loading="isSavingNotifications"
+        :disabled="isPending || !!error || isSavingNotifications"
         @update:model-value="onNotificationsChange"
       />
-    </UCard>
+    </Card>
 
     <!-- Language -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.language") }}
-        </h2>
-      </template>
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-muted">{{ t("settings.languageHelp") }}</p>
+    <Card with-border radius="xl" padding="lg">
+      <Card.Section inherit-padding with-border py="sm">
+        <Title :order="2" :fz="15">{{ t("settings.language") }}</Title>
+      </Card.Section>
+      <Group justify="space-between" gap="sm" mt="lg">
+        <Text size="sm" c="dimmed">{{ t("settings.languageHelp") }}</Text>
         <LocaleSwitcher />
-      </div>
-    </UCard>
+      </Group>
+    </Card>
 
     <!-- Appearance -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.appearance") }}
-        </h2>
-      </template>
-      <UColorModeSelect color="neutral" class="w-full sm:w-56" />
-    </UCard>
+    <Card with-border radius="xl" padding="lg">
+      <Card.Section inherit-padding with-border py="sm">
+        <Title :order="2" :fz="15">{{ t("settings.appearance") }}</Title>
+      </Card.Section>
+      <SegmentedControl
+        mt="lg"
+        :w="{ base: '100%', xs: 224 }"
+        :model-value="scheme"
+        :data="schemeItems"
+        @update:model-value="onSchemeChange"
+      />
+    </Card>
 
     <!-- Blocked players -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.blocked") }}
-        </h2>
-      </template>
+    <Card with-border radius="xl" padding="lg">
+      <Card.Section inherit-padding with-border py="sm">
+        <Title :order="2" :fz="15">{{ t("settings.blocked") }}</Title>
+      </Card.Section>
 
-      <div v-if="blockedPending" class="space-y-2">
-        <USkeleton class="h-8 w-full" />
-        <USkeleton class="h-8 w-full" />
-      </div>
-      <p v-else-if="!blocked?.length" class="text-sm text-muted">
+      <Stack v-if="blockedPending" gap="xs" mt="lg">
+        <Skeleton :height="32" />
+        <Skeleton :height="32" />
+      </Stack>
+      <Text v-else-if="!blocked?.length" size="sm" c="dimmed" mt="lg">
         {{ t("settings.blockedEmpty") }}
-      </p>
-      <ul v-else class="divide-y divide-default">
-        <li
-          v-for="row in blocked"
-          :key="row.userId"
-          class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
-        >
-          <span class="text-sm font-medium text-highlighted truncate">{{ row.displayName }}</span>
-          <UButton
-            :label="t('settings.unblock')"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            :loading="unblocking === row.userId"
-            @click="onUnblock(row.userId)"
-          />
-        </li>
-      </ul>
-    </UCard>
+      </Text>
+      <Stack v-else :gap="0" mt="md">
+        <template v-for="(row, index) in blocked" :key="row.userId">
+          <Divider v-if="index > 0" />
+          <Group justify="space-between" gap="sm" wrap="nowrap" py="xs">
+            <Text size="sm" fw="500" truncate>{{ row.displayName }}</Text>
+            <Button
+              variant="subtle"
+              color="gray"
+              size="sm"
+              :loading="unblocking === row.userId"
+              @click="onUnblock(row.userId)"
+            >
+              {{ t("settings.unblock") }}
+            </Button>
+          </Group>
+        </template>
+      </Stack>
+    </Card>
 
     <!-- Account -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.account") }}
-        </h2>
-      </template>
-      <UButton
-        :label="t('nav.signOut')"
-        icon="i-lucide-log-out"
-        color="neutral"
-        variant="outline"
-        :loading="isSigningOut"
-        @click="signOut()"
-      />
-    </UCard>
-  </div>
+    <Card with-border radius="xl" padding="lg">
+      <Card.Section inherit-padding with-border py="sm">
+        <Title :order="2" :fz="15">{{ t("settings.account") }}</Title>
+      </Card.Section>
+      <Group mt="lg">
+        <Button variant="default" :loading="isSigningOut" @click="signOut()">
+          <template #leftSection><Icon name="lucide:log-out" size="18" /></template>
+          {{ t("nav.signOut") }}
+        </Button>
+      </Group>
+    </Card>
+  </Stack>
 </template>

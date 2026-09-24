@@ -7,8 +7,39 @@ export default defineNuxtConfig({
   experimental: {
     payloadExtraction: "client",
   },
-  modules: ["@nuxt/ui", "@vueuse/nuxt", "@nuxtjs/i18n", "convex-nuxt"],
-  css: ["~/assets/css/main.css"],
+  modules: ["@nuxt/icon", "@nuxt/fonts", "@vueuse/nuxt", "@nuxtjs/i18n", "convex-nuxt"],
+  // Order matters: notifications styles must come after the core styles.
+  css: [
+    "@mantine-vue/core/styles.css",
+    "@mantine-vue/notifications/styles.css",
+    "~/assets/css/main.css",
+  ],
+  fonts: {
+    families: [
+      { name: "Instrument Sans", provider: "google", weights: [400, 500, 600, 700] },
+      { name: "Bricolage Grotesque", provider: "google", weights: [700] },
+    ],
+  },
+  icon: {
+    // Icon names are Iconify ids (`lucide:map-pin`). Only lucide (UI) and
+    // simple-icons (brand marks on the auth pages) are bundled.
+    serverBundle: { collections: ["lucide", "simple-icons"] },
+    clientBundle: { scan: true },
+  },
+  postcss: {
+    plugins: {
+      "postcss-preset-mantine": { autoRem: true },
+      "postcss-simple-vars": {
+        variables: {
+          "mantine-breakpoint-xs": "36em",
+          "mantine-breakpoint-sm": "48em",
+          "mantine-breakpoint-md": "62em",
+          "mantine-breakpoint-lg": "75em",
+          "mantine-breakpoint-xl": "88em",
+        },
+      },
+    },
+  },
   devServer: {
     port: 3001,
   },
@@ -38,5 +69,10 @@ export default defineNuxtConfig({
   },
   convex: {
     url: process.env.NUXT_PUBLIC_CONVEX_URL,
+  },
+  vite: {
+    optimizeDeps: {
+      include: ["@mantine-vue/core", "@vue/devtools-core", "@vue/devtools-kit"],
+    },
   },
 });

@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { Stack, Text, Title } from "@mantine-vue/core";
+import { notifications } from "@mantine-vue/notifications";
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
 import type { ProfileInput } from "@tennis-buddy-finder/backend/convex/model/profileSchema";
 import { ConvexError } from "convex/values";
+import { Icon } from "#components";
 
 definePageMeta({ layout: "auth", middleware: "auth", authWide: true });
 
 const { t } = useI18n();
 const localePath = useLocalePath();
-const toast = useToast();
 const ready = useConvexAuthReady();
 const { me, refresh } = await useCurrentUser();
 
@@ -30,29 +32,34 @@ async function onSubmit(input: ProfileInput) {
   try {
     await createProfile(input);
     await refresh();
-    toast.add({ title: t("onboarding.success"), icon: "i-lucide-check" });
+    notifications.show({
+      message: t("onboarding.success"),
+      icon: h(Icon, { name: "lucide:check", size: 18 }),
+      color: "surround",
+    });
     await navigateTo(localePath("/find"));
   } catch (error) {
     if (errorCode(error) === "PROFILE_EXISTS") {
-      toast.add({ title: t("onboarding.errors.profileExists"), icon: "i-lucide-info" });
+      notifications.show({
+        message: t("onboarding.errors.profileExists"),
+        icon: h(Icon, { name: "lucide:info", size: 18 }),
+      });
       await navigateTo(localePath("/find"));
       return;
     }
-    toast.add({ title: t("onboarding.errors.generic"), color: "error" });
+    notifications.show({ message: t("onboarding.errors.generic"), color: "red" });
   }
 }
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div>
-      <h1
-        class="font-display font-bold tracking-[-0.015em] text-[22px] md:text-[26px] text-highlighted"
-      >
+  <Stack :gap="24">
+    <Stack :gap="4">
+      <Title :order="1" :fz="{ base: 22, sm: 26 }" lts="-0.015em">
         {{ t("onboarding.title") }}
-      </h1>
-      <p class="mt-1 text-sm text-muted max-w-prose">{{ t("onboarding.subtitle") }}</p>
-    </div>
+      </Title>
+      <Text size="sm" c="dimmed" maw="65ch">{{ t("onboarding.subtitle") }}</Text>
+    </Stack>
 
     <ProfileForm
       :initial="{ displayName }"
@@ -61,5 +68,5 @@ async function onSubmit(input: ProfileInput) {
       :disabled="!ready"
       @submit="onSubmit"
     />
-  </div>
+  </Stack>
 </template>

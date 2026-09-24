@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { EmptyState, Group, Paper, Stack, Text, Title } from "@mantine-vue/core";
+import { notifications } from "@mantine-vue/notifications";
+import { Icon } from "#components";
 import type { SlotSummary } from "~/types/slots";
 
 /**
@@ -37,51 +40,54 @@ const selectedDay = ref(addDays(firstDayMs.value, 1));
 const visibleSlots = computed(() => slotsByDay.value.get(selectedDay.value) ?? []);
 
 const requested = ref(new Set<string>());
-const toast = useToast();
 
 function askToPlay(slot: SlotSummary) {
   requested.value = new Set(requested.value).add(slot.id);
-  toast.add({
+  notifications.show({
     title: t("demo.toastTitle"),
-    description: t("demo.toastDescription", { name: slot.player.displayName.split(" ")[0] }),
-    icon: "i-lucide-send",
+    message: t("demo.toastDescription", { name: slot.player.displayName.split(" ")[0] }),
+    icon: h(Icon, { name: "lucide:send", size: 18 }),
   });
 }
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <div class="rounded-2xl bg-default ring ring-default p-4 sm:p-5 flex flex-col gap-4">
-      <DayRail v-model="selectedDay" :days="days" />
+  <Stack gap="sm">
+    <Paper withBorder radius="xl" :p="{ base: 'md', xs: 'lg' }" bg="var(--mantine-color-body)">
+      <Stack gap="md">
+        <DayRail v-model="selectedDay" :days="days" />
 
-      <div class="flex items-baseline justify-between gap-3">
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ formatLongDay(selectedDay) }}
-        </h2>
-        <p class="text-sm text-muted" aria-live="polite">
-          {{ t("slot.openCount", visibleSlots.length) }}
-        </p>
-      </div>
+        <Group justify="space-between" align="baseline" gap="sm">
+          <Title :order="2" :fz="15">{{ formatLongDay(selectedDay) }}</Title>
+          <Text size="sm" c="dimmed" aria-live="polite">
+            {{ t("slot.openCount", visibleSlots.length) }}
+          </Text>
+        </Group>
 
-      <ul
-        v-if="visibleSlots.length"
-        class="flex flex-col gap-2 sm:gap-3"
-        :aria-label="t('demo.openSlots')"
-      >
-        <li v-for="slot in visibleSlots" :key="slot.id">
-          <SlotCard :slot="slot" :requested="requested.has(slot.id)" @ask="askToPlay" />
-        </li>
-      </ul>
+        <Stack
+          v-if="visibleSlots.length"
+          component="ul"
+          gap="sm"
+          p="0"
+          m="0"
+          style="list-style: none"
+          :aria-label="t('demo.openSlots')"
+        >
+          <li v-for="slot in visibleSlots" :key="slot.id">
+            <SlotCard :slot="slot" :requested="requested.has(slot.id)" @ask="askToPlay" />
+          </li>
+        </Stack>
 
-      <UEmpty
-        v-else
-        icon="i-lucide-calendar-days"
-        :title="t('demo.emptyTitle')"
-        :description="t('demo.emptyDescription')"
-        :ui="{ root: 'py-10 rounded-2xl bg-elevated ring ring-default' }"
-      />
-    </div>
+        <Paper v-else withBorder radius="xl" :py="40" px="md">
+          <EmptyState :title="t('demo.emptyTitle')" :description="t('demo.emptyDescription')">
+            <template #icon>
+              <Icon name="lucide:calendar-days" size="32" aria-hidden="true" />
+            </template>
+          </EmptyState>
+        </Paper>
+      </Stack>
+    </Paper>
 
-    <p class="text-xs text-muted text-center">{{ t("demo.caption") }}</p>
-  </div>
+    <Text size="xs" c="dimmed" ta="center">{{ t("demo.caption") }}</Text>
+  </Stack>
 </template>

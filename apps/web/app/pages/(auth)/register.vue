@@ -1,5 +1,18 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from "@nuxt/ui";
+import {
+  Alert,
+  Anchor,
+  Button,
+  Divider,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine-vue/core";
+import { useForm, zodResolver } from "@mantine-vue/form";
+import { notifications } from "@mantine-vue/notifications";
+import { NuxtLinkLocale } from "#components";
 import { authClient } from "~/utils/auth-client";
 import type { AuthErrorKey } from "~/utils/authErrors";
 
@@ -8,7 +21,6 @@ definePageMeta({ layout: "auth", middleware: "guest" });
 const { t } = useI18n();
 const route = useRoute();
 const localePath = useLocalePath();
-const toast = useToast();
 
 useSeoMeta({
   title: () => t("auth.register.seoTitle"),
@@ -18,13 +30,18 @@ useSeoMeta({
 // Brand marks are not in lucide. simple-icons is the sole permitted exception
 // to the lucide-only rule, and only for these two provider buttons.
 const providers = [
-  { id: "google", icon: "i-simple-icons-google" },
-  { id: "facebook", icon: "i-simple-icons-facebook" },
+  { id: "google", icon: "simple-icons:google" },
+  { id: "facebook", icon: "simple-icons:facebook" },
 ] as const;
 type Provider = (typeof providers)[number]["id"];
 
 const schema = createRegisterSchema(t);
-const state = reactive({ name: "", email: "", password: "" });
+const form = useForm<RegisterSchema>({
+  initialValues: { name: "", email: "", password: "" },
+  validate: zodResolver(schema),
+  // Submit receives the parsed output (trimmed name), as `FormSubmitEvent.data` used to.
+  transformValues: (values) => schema.parse(values),
+});
 
 const submitting = ref(false);
 const socialPending = ref<Provider | null>(null);
@@ -35,11 +52,11 @@ const postAuthPath = computed(() =>
   resolvePostAuthPath({ redirect: route.query.redirect, fallback: localePath("/find") }),
 );
 
-async function onSubmit(event: FormSubmitEvent<RegisterSchema>) {
+const onSubmit = form.onSubmit(async (values) => {
   errorKey.value = null;
   submitting.value = true;
   try {
-    const { error } = await authClient.signUp.email(event.data);
+    const { error } = await authClient.signUp.email(values);
     if (error) {
       errorKey.value = authErrorKey(error);
       return;
@@ -50,7 +67,7 @@ async function onSubmit(event: FormSubmitEvent<RegisterSchema>) {
   } finally {
     submitting.value = false;
   }
-}
+});
 
 async function signInWith(provider: Provider) {
   errorKey.value = null;
@@ -61,10 +78,10 @@ async function signInWith(provider: Provider) {
       callbackURL: postAuthPath.value,
     });
     if (error) {
-      toast.add({ title: t(authErrorKey(error)), color: "error" });
+      notifications.show({ message: t(authErrorKey(error)), color: "red" });
     }
   } catch {
-    toast.add({ title: t(authErrorKey(null)), color: "error" });
+    notifications.show({ message: t(authErrorKey(null)), color: "red" });
   } finally {
     socialPending.value = null;
   }
@@ -72,94 +89,88 @@ async function signInWith(provider: Provider) {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="space-y-5">
-      <div>
-        <h1
-          class="font-display font-bold tracking-[-0.015em] text-[22px] md:text-[26px] text-highlighted"
-        >
+  <Stack :gap="24">
+    <Stack gap="lg">
+      <Stack :gap="4">
+        <Title :order="1" :fz="{ base: 22, sm: 26 }" lts="-0.015em">
           {{ t("auth.register.title") }}
-        </h1>
-        <p class="mt-1 text-sm text-muted">{{ t("auth.register.subtitle") }}</p>
-      </div>
+        </Title>
+        <Text size="sm" c="dimmed">{{ t("auth.register.subtitle") }}</Text>
+      </Stack>
 
-      <div class="space-y-2">
-        <UButton
+      <Stack :gap="8">
+        <Button
           v-for="provider in providers"
           :key="provider.id"
-          :label="t(`auth.providers.${provider.id}`)"
-          :icon="provider.icon"
-          color="neutral"
-          variant="outline"
+          variant="default"
           size="lg"
-          block
+          fullWidth
           :loading="socialPending === provider.id"
           :disabled="busy"
           @click="signInWith(provider.id)"
-        />
-      </div>
+        >
+          <template #leftSection><Icon :name="provider.icon" size="18" /></template>
+          {{ t(`auth.providers.${provider.id}`) }}
+        </Button>
+      </Stack>
 
-      <USeparator :label="t('auth.divider')" />
+      <Divider :label="t('auth.divider')" />
 
-      <UAlert
-        v-if="errorKey"
-        color="error"
-        variant="soft"
-        icon="i-lucide-circle-alert"
-        :description="t(errorKey)"
-      />
+      <Alert v-if="errorKey" color="red" variant="light">
+        <template #icon><Icon name="lucide:circle-alert" size="20" /></template>
+        {{ t(errorKey) }}
+      </Alert>
 
-      <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-        <UFormField name="name" :label="t('auth.fields.name')" required>
-          <UInput
-            v-model="state.name"
+      <form novalidate @submit="onSubmit">
+        <Stack gap="md">
+          <TextInput
+            :label="t('auth.fields.name')"
             type="text"
             autocomplete="name"
             size="lg"
-            class="w-full"
+            withAsterisk
             :placeholder="t('auth.fields.namePlaceholder')"
+            v-bind="form.getInputProps('name')"
           />
-        </UFormField>
 
-        <UFormField name="email" :label="t('auth.fields.email')" required>
-          <UInput
-            v-model="state.email"
+          <TextInput
+            :label="t('auth.fields.email')"
             type="email"
             autocomplete="email"
             inputmode="email"
             size="lg"
-            class="w-full"
+            withAsterisk
             :placeholder="t('auth.fields.emailPlaceholder')"
+            v-bind="form.getInputProps('email')"
           />
-        </UFormField>
 
-        <UFormField name="password" :label="t('auth.fields.password')" required>
-          <UInput
-            v-model="state.password"
-            type="password"
+          <PasswordInput
+            :label="t('auth.fields.password')"
             autocomplete="new-password"
             size="lg"
-            class="w-full"
+            withAsterisk
             :placeholder="t('auth.fields.newPasswordPlaceholder')"
+            v-bind="form.getInputProps('password')"
           />
-        </UFormField>
 
-        <UButton
-          type="submit"
-          :label="t('auth.register.submit')"
-          size="lg"
-          block
-          :loading="submitting"
-          :disabled="socialPending !== null"
-        />
-      </UForm>
-    </div>
+          <Button
+            type="submit"
+            size="lg"
+            fullWidth
+            :loading="submitting"
+            :disabled="socialPending !== null"
+          >
+            {{ t("auth.register.submit") }}
+          </Button>
+        </Stack>
+      </form>
+    </Stack>
 
-    <p class="text-sm text-muted">
+    <Text size="sm" c="dimmed">
       {{ t("auth.register.haveAccount") }}
-      <ULink to="/login" class="font-medium text-primary hover:underline">
+      <Anchor :component="NuxtLinkLocale" to="/login" fw="500">
         {{ t("auth.register.signIn") }}
-      </ULink>
-    </p>
-  </div>
+      </Anchor>
+    </Text>
+  </Stack>
 </template>

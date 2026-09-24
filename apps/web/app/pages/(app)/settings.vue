@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Skeleton, Stack, Title } from "@mantine-vue/core";
+
 definePageMeta({ middleware: ["auth", "onboarded"] });
 
 const { t } = useI18n();
@@ -10,21 +12,19 @@ useSeoMeta({ title: () => t("pages.settings.title") });
 </script>
 
 <template>
-  <div class="max-w-[640px] space-y-4">
-    <h1
-      class="font-display font-bold tracking-[-0.015em] text-[22px] md:text-[26px] text-highlighted"
-    >
+  <Stack :maw="640" gap="md">
+    <Title :order="1" :fz="{ base: 22, sm: 26 }" lts="-0.015em">
       {{ t("pages.settings.title") }}
-    </h1>
+    </Title>
 
     <SettingsSections v-if="ready" />
 
-    <div v-else class="space-y-4" aria-busy="true">
-      <USkeleton class="h-56 w-full rounded-2xl" />
-      <USkeleton class="h-28 w-full rounded-2xl" />
-      <USkeleton class="h-24 w-full rounded-2xl" />
-      <USkeleton class="h-24 w-full rounded-2xl" />
-      <USkeleton class="h-24 w-full rounded-2xl" />
-    </div>
-  </div>
+    <Stack v-else gap="md" aria-busy="true">
+      <Skeleton :height="224" radius="xl" />
+      <Skeleton :height="112" radius="xl" />
+      <Skeleton :height="96" radius="xl" />
+      <Skeleton :height="96" radius="xl" />
+      <Skeleton :height="96" radius="xl" />
+    </Stack>
+  </Stack>
 </template>

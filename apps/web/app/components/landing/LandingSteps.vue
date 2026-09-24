@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import {
+  Badge,
+  Container,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+  VisuallyHidden,
+} from "@mantine-vue/core";
+
 /**
  * The four steps are a real sequence, so they are numbered.
  * Each vignette reuses the same slot chip components as the app.
@@ -37,109 +49,143 @@ const filters = computed(() => [
 ]);
 
 const STEP_KEYS = ["add", "find", "ask", "chat"] as const;
+
+/** Rows inside a vignette sit on a hairline, like the calendar day sheet in the app. */
+const ROW_DIVIDER = "border-top: 1px solid var(--mantine-color-default-border)";
 </script>
 
 <template>
-  <UPageSection
+  <Container
     id="how-it-works"
-    :title="t('steps.title')"
-    :description="t('steps.description')"
-    class="scroll-mt-16"
-    :ui="{ container: 'py-16 sm:py-20 lg:py-24', body: 'mt-10 lg:mt-12' }"
+    component="section"
+    size="72rem"
+    :py="{ base: 64, xs: 80, md: 96 }"
+    style="scroll-margin-top: 4rem"
   >
-    <ol class="grid gap-4 sm:gap-5 md:grid-cols-2">
-      <li
+    <Stack gap="md" align="center">
+      <Title :order="2" :fz="{ base: 30, xs: 36, md: 48 }" ta="center" textWrap="balance">
+        {{ t("steps.title") }}
+      </Title>
+      <Text :fz="{ base: 'md', xs: 'lg' }" c="dimmed" ta="center" maw="65ch">
+        {{ t("steps.description") }}
+      </Text>
+    </Stack>
+
+    <SimpleGrid
+      component="ol"
+      :cols="{ base: 1, sm: 2 }"
+      :spacing="{ base: 'md', xs: 'lg' }"
+      :mt="{ base: 40, md: 48 }"
+      p="0"
+      m="0"
+      style="list-style: none"
+    >
+      <Paper
         v-for="(key, index) in STEP_KEYS"
         :key="key"
-        class="rounded-2xl bg-elevated ring ring-default p-5 sm:p-6 flex flex-col gap-5"
+        component="li"
+        withBorder
+        radius="xl"
+        :p="{ base: 'lg', sm: 'xl' }"
       >
-        <div
-          class="rounded-xl bg-default ring ring-default p-4 min-h-40 flex flex-col justify-center gap-2"
-        >
-          <!-- 1: the calendar day sheet -->
-          <template v-if="key === 'add'">
-            <div class="flex items-baseline justify-between">
-              <span class="font-display font-bold text-sm text-highlighted">
-                {{ formatShortDay(dayMs) }}
-              </span>
-              <span class="text-xs text-muted">{{ t("slot.count", calendarSlots.length) }}</span>
-            </div>
-            <SlotRow
-              v-for="slot in calendarSlots"
-              :key="slot.startAt"
-              v-bind="slot"
-              status="open"
-              class="border-t border-default"
-            >
-              <template #trailing>
-                <UIcon name="i-lucide-x" class="size-4 text-dimmed" aria-hidden="true" />
+        <Stack gap="lg">
+          <Paper withBorder radius="lg" p="md" bg="var(--mantine-color-body)">
+            <!-- 160px minimum including the Paper's own padding. -->
+            <Stack :gap="8" justify="center" :mih="128">
+              <!-- 1: the calendar day sheet -->
+              <template v-if="key === 'add'">
+                <Group justify="space-between" align="baseline" gap="sm">
+                  <Text ff="heading" fw="700" size="sm">{{ formatShortDay(dayMs) }}</Text>
+                  <Text size="xs" c="dimmed">{{ t("slot.count", calendarSlots.length) }}</Text>
+                </Group>
+                <SlotRow
+                  v-for="slot in calendarSlots"
+                  :key="slot.startAt"
+                  v-bind="slot"
+                  status="open"
+                  :style="ROW_DIVIDER"
+                >
+                  <template #trailing>
+                    <Icon
+                      name="lucide:x"
+                      size="16"
+                      style="color: var(--mantine-color-dimmed)"
+                      aria-hidden="true"
+                    />
+                  </template>
+                </SlotRow>
               </template>
-            </SlotRow>
-          </template>
 
-          <!-- 2: filters and a day count -->
-          <template v-else-if="key === 'find'">
-            <div class="flex flex-wrap gap-1.5">
-              <UBadge
-                v-for="filter in filters"
-                :key="filter.label"
-                :label="filter.label"
-                :color="filter.active ? 'primary' : 'neutral'"
-                :variant="filter.active ? 'soft' : 'outline'"
-                size="md"
-              />
-            </div>
-            <div class="flex items-baseline justify-between mt-2">
-              <span class="font-display font-bold text-sm text-highlighted">
-                {{ formatShortDay(dayMs) }}
-              </span>
-              <span class="text-xs text-muted">{{ t("slot.openCount", 3) }}</span>
-            </div>
-            <PlayerIdentity :player="DEMO_PLAYERS.ana" :venue="DEMO_VENUES.clube" />
-          </template>
+              <!-- 2: filters and a day count -->
+              <template v-else-if="key === 'find'">
+                <Group :gap="6">
+                  <Badge
+                    v-for="filter in filters"
+                    :key="filter.label"
+                    :variant="filter.active ? 'light' : 'outline'"
+                    :color="filter.active ? 'court' : 'gray'"
+                    size="md"
+                    tt="none"
+                    fw="500"
+                  >
+                    {{ filter.label }}
+                  </Badge>
+                </Group>
+                <Group justify="space-between" align="baseline" gap="sm" :mt="8">
+                  <Text ff="heading" fw="700" size="sm">{{ formatShortDay(dayMs) }}</Text>
+                  <Text size="xs" c="dimmed">{{ t("slot.openCount", 3) }}</Text>
+                </Group>
+                <PlayerIdentity :player="DEMO_PLAYERS.ana" :venue="DEMO_VENUES.clube" />
+              </template>
 
-          <!-- 3: a request waiting for an answer -->
-          <template v-else-if="key === 'ask'">
-            <div class="flex items-center justify-between gap-3">
-              <PlayerIdentity :player="DEMO_PLAYERS.rui" />
-              <RequestStatusBadge status="pending" />
-            </div>
-            <SlotRow v-bind="calendarSlots[0]!" status="open" class="border-t border-default" />
-            <p class="text-sm text-default">{{ t("steps.requestNote") }}</p>
-          </template>
+              <!-- 3: a request waiting for an answer -->
+              <template v-else-if="key === 'ask'">
+                <Group justify="space-between" gap="sm" wrap="nowrap">
+                  <PlayerIdentity :player="DEMO_PLAYERS.rui" />
+                  <RequestStatusBadge status="pending" />
+                </Group>
+                <SlotRow v-bind="calendarSlots[0]!" status="open" :style="ROW_DIVIDER" />
+                <Text size="sm">{{ t("steps.requestNote") }}</Text>
+              </template>
 
-          <!-- 4: chat with the matched slot pinned -->
-          <template v-else>
-            <SlotRow
-              v-bind="matchedSlot"
-              status="matched"
-              class="rounded-lg bg-elevated ring ring-default px-3 min-h-10"
-            />
-            <div class="flex flex-col gap-2 mt-1">
-              <MessageBubble time="18:42">{{ t("steps.chatTheirs") }}</MessageBubble>
-              <MessageBubble mine time="18:50">{{ t("steps.chatMine") }}</MessageBubble>
-            </div>
-          </template>
-        </div>
+              <!-- 4: chat with the matched slot pinned -->
+              <template v-else>
+                <Paper withBorder radius="md" px="sm" :mih="40">
+                  <SlotRow v-bind="matchedSlot" status="matched" />
+                </Paper>
+                <Stack :gap="8" :mt="4">
+                  <MessageBubble time="18:42">{{ t("steps.chatTheirs") }}</MessageBubble>
+                  <MessageBubble mine time="18:50">{{ t("steps.chatMine") }}</MessageBubble>
+                </Stack>
+              </template>
+            </Stack>
+          </Paper>
 
-        <div class="flex gap-4">
-          <span
-            class="font-display font-bold text-2xl leading-none text-primary tabular-nums shrink-0"
-            aria-hidden="true"
-          >
-            {{ index + 1 }}
-          </span>
-          <div>
-            <h3 class="font-semibold text-highlighted">
-              <span class="sr-only">{{ t("steps.stepLabel", { n: index + 1 }) }} </span
-              >{{ t(`steps.items.${key}.title`) }}
-            </h3>
-            <p class="text-[15px] text-muted mt-1 max-w-prose">
-              {{ t(`steps.items.${key}.description`) }}
-            </p>
-          </div>
-        </div>
-      </li>
-    </ol>
-  </UPageSection>
+          <Group gap="md" align="flex-start" wrap="nowrap">
+            <Text
+              ff="heading"
+              fw="700"
+              :fz="24"
+              :lh="1"
+              c="court"
+              flex="0 0 auto"
+              style="font-variant-numeric: tabular-nums"
+              aria-hidden="true"
+            >
+              {{ index + 1 }}
+            </Text>
+            <Stack :gap="4">
+              <Title :order="3" ff="text" fw="600" fz="md">
+                <VisuallyHidden>{{ t("steps.stepLabel", { n: index + 1 }) }} </VisuallyHidden
+                >{{ t(`steps.items.${key}.title`) }}
+              </Title>
+              <Text :fz="15" c="dimmed" maw="65ch">
+                {{ t(`steps.items.${key}.description`) }}
+              </Text>
+            </Stack>
+          </Group>
+        </Stack>
+      </Paper>
+    </SimpleGrid>
+  </Container>
 </template>

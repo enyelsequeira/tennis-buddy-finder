@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { Box, UnstyledButton } from "@mantine-vue/core";
+import { NuxtLinkLocale } from "#components";
+
 /**
- * Mobile app shell navigation (below `md`): a fixed 64px bottom bar with the
+ * Mobile app shell navigation (below `sm`): a fixed 64px bottom bar with the
  * five sections from the visual spec. Pages that use another layout (auth,
  * onboarding) never render it.
  */
@@ -9,32 +12,61 @@ const route = useRoute();
 const localePath = useLocalePath();
 
 const tabs = computed(() => [
-  { label: t("nav.find"), to: "/find", icon: "i-lucide-search" },
-  { label: t("nav.calendar"), to: "/calendar", icon: "i-lucide-calendar-days" },
-  { label: t("nav.requests"), to: "/requests", icon: "i-lucide-inbox" },
-  { label: t("nav.messages"), to: "/messages", icon: "i-lucide-message-circle" },
-  { label: t("nav.me"), to: "/settings", icon: "i-lucide-user-round" },
+  { label: t("nav.find"), to: "/find", icon: "lucide:search" },
+  { label: t("nav.calendar"), to: "/calendar", icon: "lucide:calendar-days" },
+  { label: t("nav.requests"), to: "/requests", icon: "lucide:inbox" },
+  { label: t("nav.messages"), to: "/messages", icon: "lucide:message-circle" },
+  { label: t("nav.me"), to: "/settings", icon: "lucide:user-round" },
 ]);
 
 const isActive = (path: string) => route.path.startsWith(localePath(path));
 </script>
 
 <template>
-  <nav
-    class="md:hidden fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-5 border-t border-default bg-elevated pb-[env(safe-area-inset-bottom,0px)]"
-    :aria-label="t('nav.main')"
-  >
-    <ULink
+  <Box component="nav" hiddenFrom="sm" :class="$style.bar" :aria-label="t('nav.main')">
+    <UnstyledButton
       v-for="tab in tabs"
       :key="tab.to"
+      :component="NuxtLinkLocale"
       :to="tab.to"
-      raw
-      class="flex flex-col items-center justify-center gap-1 text-[10.5px] font-medium focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
-      :class="isActive(tab.to) ? 'text-primary' : 'text-dimmed'"
+      :class="$style.tab"
+      :c="isActive(tab.to) ? 'court' : 'dimmed'"
       :aria-current="isActive(tab.to) ? 'page' : undefined"
     >
-      <UIcon :name="tab.icon" class="size-5" />
+      <Icon :name="tab.icon" size="20" />
       {{ tab.label }}
-    </ULink>
-  </nav>
+    </UnstyledButton>
+  </Box>
 </template>
+
+<style module>
+/* Fixed to the viewport bottom, padded for the iOS home indicator. */
+.bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--mantine-color-default-border);
+  background-color: var(--app-color-elevated);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--mantine-color-court-filled);
+  outline-offset: -2px;
+}
+</style>

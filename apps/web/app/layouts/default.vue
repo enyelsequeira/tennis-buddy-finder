@@ -1,18 +1,20 @@
 <script setup lang="ts">
+import { Box, Container } from "@mantine-vue/core";
+
 /**
- * App shell for signed-in, onboarded pages: `AppHeader` from `md` up and
+ * App shell for signed-in, onboarded pages: `AppHeader` from `sm` up and
  * `AppTabBar` below it. The bottom padding keeps content clear of the tab bar.
  */
 </script>
 
 <template>
-  <div class="min-h-screen bg-default">
+  <Box mih="100vh">
     <AppHeader />
-    <UMain>
-      <UContainer class="pb-24 pt-4 md:pb-8 md:pt-8">
+    <Box component="main">
+      <Container size="72rem" :pt="{ base: 'md', sm: 'xl' }" :pb="{ base: 96, sm: 'xl' }">
         <slot />
-      </UContainer>
-    </UMain>
+      </Container>
+    </Box>
     <AppTabBar />
-  </div>
+  </Box>
 </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Box, Container, Group, Paper, SimpleGrid, Stack, Text, Title } from "@mantine-vue/core";
+
 const { t } = useI18n();
 
 // Translation keys cannot contain dots, so the rating is carried separately.
@@ -13,24 +15,47 @@ const LEVELS = [
 </script>
 
 <template>
-  <UPageSection
+  <Container
     id="your-level"
-    :title="t('levels.title')"
-    :description="t('levels.description')"
-    orientation="horizontal"
-    class="scroll-mt-16"
-    :ui="{
-      container: 'py-16 sm:py-20 lg:py-24 lg:gap-16',
-      description: 'max-w-prose',
-    }"
+    component="section"
+    size="72rem"
+    :py="{ base: 64, xs: 80, md: 96 }"
+    style="scroll-margin-top: 4rem"
   >
-    <dl class="rounded-2xl bg-elevated ring ring-default divide-y divide-default">
-      <div v-for="level in LEVELS" :key="level.key" class="flex items-start gap-4 px-5 py-3.5">
-        <dt class="shrink-0 pt-0.5">
-          <NtrpBadge :rating="level.rating" />
-        </dt>
-        <dd class="text-sm text-default">{{ t(`levels.items.${level.key}`) }}</dd>
-      </div>
-    </dl>
-  </UPageSection>
+    <SimpleGrid :cols="{ base: 1, md: 2 }" :spacing="{ base: 32, xs: 64 }">
+      <Stack gap="md" justify="center">
+        <Title :order="2" :fz="{ base: 30, xs: 36, md: 48 }" textWrap="balance">
+          {{ t("levels.title") }}
+        </Title>
+        <Text :fz="{ base: 'md', xs: 'lg' }" c="dimmed" maw="65ch">
+          {{ t("levels.description") }}
+        </Text>
+      </Stack>
+
+      <Paper component="dl" withBorder radius="xl" m="0">
+        <Group
+          v-for="level in LEVELS"
+          :key="level.key"
+          :class="$style.row"
+          align="flex-start"
+          gap="md"
+          wrap="nowrap"
+          px="lg"
+          :py="14"
+        >
+          <Box component="dt" flex="0 0 auto" :pt="2">
+            <NtrpBadge :rating="level.rating" />
+          </Box>
+          <Text component="dd" size="sm" m="0">{{ t(`levels.items.${level.key}`) }}</Text>
+        </Group>
+      </Paper>
+    </SimpleGrid>
+  </Container>
 </template>
+
+<style module>
+/* Hairline between rows; a sibling selector is the one thing props cannot express. */
+.row + .row {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+</style>

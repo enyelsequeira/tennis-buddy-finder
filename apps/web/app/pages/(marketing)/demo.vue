@@ -1,4 +1,17 @@
 <script setup lang="ts">
+import {
+  Badge,
+  Button,
+  Card,
+  Container,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from "@mantine-vue/core";
 import type { PlayFormat, SlotStatus } from "~/types/slots";
 
 /**
@@ -43,120 +56,139 @@ const requested = ref(false);
 </script>
 
 <template>
-  <UContainer class="py-10 sm:py-14 flex flex-col gap-8">
-    <div class="flex flex-col gap-2">
-      <h1 class="font-display font-bold tracking-[-0.015em] text-3xl sm:text-4xl text-highlighted">
-        {{ t("playground.title") }}
-      </h1>
-      <p class="text-muted max-w-prose">{{ t("playground.description") }}</p>
-    </div>
+  <Container size="72rem" :py="{ base: 40, xs: 56 }">
+    <Stack gap="xl">
+      <Stack :gap="8">
+        <Title :order="1" :fz="{ base: 30, xs: 36 }" lts="-0.015em">
+          {{ t("playground.title") }}
+        </Title>
+        <Text c="dimmed" maw="65ch">{{ t("playground.description") }}</Text>
+      </Stack>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <UCard>
-        <template #header>
-          <h2 class="font-semibold text-highlighted">{{ t("playground.locale") }}</h2>
-        </template>
-        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-          <dt class="text-muted">{{ t("playground.current") }}</dt>
-          <dd class="text-highlighted font-semibold">{{ locale }}</dd>
-          <dt class="text-muted">{{ t("playground.available") }}</dt>
-          <dd>{{ locales.map((entry) => `${entry.code} (${entry.language})`).join(", ") }}</dd>
-          <dt class="text-muted">{{ t("playground.switch") }}</dt>
-          <dd><LocaleSwitcher /></dd>
-        </dl>
-      </UCard>
+      <SimpleGrid :cols="{ base: 1, sm: 2 }" spacing="md">
+        <Card withBorder radius="lg" :p="{ base: 'md', xs: 'lg' }">
+          <Card.Section withBorder inheritPadding py="md">
+            <Title :order="2" ff="text" fw="600" fz="md">{{ t("playground.locale") }}</Title>
+          </Card.Section>
+          <dl :class="$style.facts">
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.current") }}</Text>
+            <Text component="dd" size="sm" fw="600" m="0">{{ locale }}</Text>
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.available") }}</Text>
+            <Text component="dd" size="sm" m="0">
+              {{ locales.map((entry) => `${entry.code} (${entry.language})`).join(", ") }}
+            </Text>
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.switch") }}</Text>
+            <Text component="dd" size="sm" m="0"><LocaleSwitcher /></Text>
+          </dl>
+        </Card>
 
-      <UCard>
-        <template #header>
-          <h2 class="font-semibold text-highlighted">{{ t("playground.dates") }}</h2>
-        </template>
-        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-          <dt class="text-muted">{{ t("playground.longDay") }}</dt>
-          <dd>{{ formatLongDay(firstDayMs) }}</dd>
-          <dt class="text-muted">{{ t("playground.shortDay") }}</dt>
-          <dd>{{ formatShortDay(firstDayMs) }}</dd>
-          <dt class="text-muted">{{ t("playground.weekdays") }}</dt>
-          <dd>{{ week.map(formatWeekday).join(" · ") }}</dd>
-          <dt class="text-muted">{{ t("playground.range") }}</dt>
-          <dd class="font-display font-bold">{{ time.formatRange(sampleRange) }}</dd>
-          <dt class="text-muted">{{ t("playground.duration") }}</dt>
-          <dd>{{ time.formatDuration(sampleRange) }}</dd>
-        </dl>
-      </UCard>
+        <Card withBorder radius="lg" :p="{ base: 'md', xs: 'lg' }">
+          <Card.Section withBorder inheritPadding py="md">
+            <Title :order="2" ff="text" fw="600" fz="md">{{ t("playground.dates") }}</Title>
+          </Card.Section>
+          <dl :class="$style.facts">
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.longDay") }}</Text>
+            <Text component="dd" size="sm" m="0">{{ formatLongDay(firstDayMs) }}</Text>
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.shortDay") }}</Text>
+            <Text component="dd" size="sm" m="0">{{ formatShortDay(firstDayMs) }}</Text>
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.weekdays") }}</Text>
+            <Text component="dd" size="sm" m="0">{{ week.map(formatWeekday).join(" · ") }}</Text>
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.range") }}</Text>
+            <Text component="dd" size="sm" ff="heading" fw="700" m="0">
+              {{ time.formatRange(sampleRange) }}
+            </Text>
+            <Text component="dt" size="sm" c="dimmed">{{ t("playground.duration") }}</Text>
+            <Text component="dd" size="sm" m="0">{{ time.formatDuration(sampleRange) }}</Text>
+          </dl>
+        </Card>
 
-      <UCard>
-        <template #header>
-          <h2 class="font-semibold text-highlighted">{{ t("playground.plurals") }}</h2>
-        </template>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-muted">
-              <th class="font-medium pb-2">n</th>
-              <th class="font-medium pb-2">slot.openCount</th>
-              <th class="font-medium pb-2">slot.count</th>
-              <th class="font-medium pb-2">player.playingYears</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-default">
-            <tr v-for="n in COUNTS" :key="n">
-              <td class="py-1.5 tabular-nums">{{ n }}</td>
-              <td class="py-1.5">{{ t("slot.openCount", n) }}</td>
-              <td class="py-1.5">{{ t("slot.count", n) }}</td>
-              <td class="py-1.5">{{ t("player.playingYears", n) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </UCard>
+        <Card withBorder radius="lg" :p="{ base: 'md', xs: 'lg' }">
+          <Card.Section withBorder inheritPadding py="md">
+            <Title :order="2" ff="text" fw="600" fz="md">{{ t("playground.plurals") }}</Title>
+          </Card.Section>
+          <Table fz="sm" :verticalSpacing="6" horizontalSpacing="0" tabularNums>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th c="dimmed" fw="500">n</Table.Th>
+                <Table.Th c="dimmed" fw="500">slot.openCount</Table.Th>
+                <Table.Th c="dimmed" fw="500">slot.count</Table.Th>
+                <Table.Th c="dimmed" fw="500">player.playingYears</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              <Table.Tr v-for="n in COUNTS" :key="n">
+                <Table.Td>{{ n }}</Table.Td>
+                <Table.Td>{{ t("slot.openCount", n) }}</Table.Td>
+                <Table.Td>{{ t("slot.count", n) }}</Table.Td>
+                <Table.Td>{{ t("player.playingYears", n) }}</Table.Td>
+              </Table.Tr>
+            </Table.Tbody>
+          </Table>
+        </Card>
 
-      <UCard>
-        <template #header>
-          <h2 class="font-semibold text-highlighted">{{ t("playground.statuses") }}</h2>
-        </template>
-        <div class="flex flex-col gap-4 text-sm">
-          <div class="flex flex-wrap items-center gap-2">
-            <RequestStatusBadge v-for="status in REQUEST_STATUSES" :key="status" :status="status" />
-          </div>
-          <div class="flex flex-wrap items-center gap-4">
-            <span
-              v-for="status in SLOT_STATUSES"
-              :key="status"
-              class="inline-flex items-center gap-2"
-            >
-              <SlotStatusDot :status="status" />
-              {{ t(`slot.status.${status}`) }}
-            </span>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <UBadge
-              v-for="format in FORMATS"
-              :key="format"
-              :label="t(`player.formats.${format}`)"
-              color="neutral"
-              variant="soft"
-            />
-          </div>
-        </div>
-      </UCard>
-    </div>
+        <Card withBorder radius="lg" :p="{ base: 'md', xs: 'lg' }">
+          <Card.Section withBorder inheritPadding py="md">
+            <Title :order="2" ff="text" fw="600" fz="md">{{ t("playground.statuses") }}</Title>
+          </Card.Section>
+          <Stack gap="md" pt="md">
+            <Group :gap="8">
+              <RequestStatusBadge
+                v-for="status in REQUEST_STATUSES"
+                :key="status"
+                :status="status"
+              />
+            </Group>
+            <Group gap="md">
+              <Group v-for="status in SLOT_STATUSES" :key="status" :gap="8" wrap="nowrap">
+                <SlotStatusDot :status="status" />
+                <Text size="sm">{{ t(`slot.status.${status}`) }}</Text>
+              </Group>
+            </Group>
+            <Group :gap="8">
+              <Badge
+                v-for="format in FORMATS"
+                :key="format"
+                color="gray"
+                variant="light"
+                tt="none"
+                fw="500"
+              >
+                {{ t(`player.formats.${format}`) }}
+              </Badge>
+            </Group>
+          </Stack>
+        </Card>
+      </SimpleGrid>
 
-    <div class="flex flex-col gap-3">
-      <h2 class="font-semibold text-highlighted">{{ t("playground.components") }}</h2>
-      <div class="grid gap-4 md:grid-cols-2">
-        <SlotCard :slot="sampleSlot" :requested="requested" @ask="requested = true" />
-        <div class="rounded-2xl bg-elevated ring ring-default p-3.5 flex flex-col gap-2">
-          <SlotRow v-bind="sampleSlot" />
-          <SlotRow v-bind="sampleRange" status="matched" venue="Parque das Abadias" />
-          <UButton
-            v-if="requested"
-            :label="t('playground.reset')"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            class="self-start"
-            @click="requested = false"
-          />
-        </div>
-      </div>
-    </div>
-  </UContainer>
+      <Stack gap="sm">
+        <Title :order="2" ff="text" fw="600" fz="md">{{ t("playground.components") }}</Title>
+        <SimpleGrid :cols="{ base: 1, sm: 2 }" spacing="md">
+          <SlotCard :slot="sampleSlot" :requested="requested" @ask="requested = true" />
+          <Paper withBorder radius="xl" :p="14">
+            <Stack :gap="8">
+              <SlotRow v-bind="sampleSlot" />
+              <SlotRow v-bind="sampleRange" status="matched" venue="Parque das Abadias" />
+              <Group v-if="requested">
+                <Button variant="default" size="sm" @click="requested = false">
+                  {{ t("playground.reset") }}
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+        </SimpleGrid>
+      </Stack>
+    </Stack>
+  </Container>
 </template>
+
+<style module>
+/* Label / value pairs: a two-column grid template is not expressible with props. */
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--mantine-spacing-lg);
+  row-gap: rem(8px);
+  margin: 0;
+  padding-top: var(--mantine-spacing-md);
+}
+</style>

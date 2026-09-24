@@ -12,7 +12,13 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.12.5",
-    "@nuxt/ui": "^4.10.0",
+    "@mantine-vue/core": "^3.4.0",
+    "@mantine-vue/form": "^3.4.0",
+    "@mantine-vue/hooks": "^3.4.0",
+    "@mantine-vue/notifications": "^3.4.0",
+    "@mantine-vue/utils": "^3.4.0",
+    "@nuxt/fonts": "^0.14.0",
+    "@nuxt/icon": "^2.5.1",
     "@nuxtjs/i18n": "^10.6.0",
     "@tennis-buddy-finder/backend": "workspace:*",
     "@tennis-buddy-finder/env": "workspace:*",
@@ -34,7 +40,9 @@
     "@iconify-json/lucide": "^1.2.120",
     "@iconify-json/simple-icons": "^1.2.96",
     "@tennis-buddy-finder/config": "workspace:*",
-    "tailwindcss": "^4.3.3",
+    "postcss": "^8.5.28",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
     "typescript": "catalog:",
     "vue-tsc": "^3.3.8"
   }

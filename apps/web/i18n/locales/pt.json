@@ -14,6 +14,8 @@
     "signIn": "Entrar",
     "createAccount": "Criar conta",
     "language": "Idioma",
+    "openMenu": "Abrir menu",
+    "closeMenu": "Fechar menu",
     "demo": "Demo",
     "main": "Navegação principal",
     "find": "Encontrar",
@@ -363,6 +365,11 @@
     "language": "Idioma",
     "languageHelp": "Escolhe o idioma da app.",
     "appearance": "Aspeto",
+    "theme": {
+      "light": "Claro",
+      "dark": "Escuro",
+      "system": "Sistema"
+    },
     "blocked": "Jogadores bloqueados",
     "blockedEmpty": "Não bloqueaste ninguém.",
     "unblock": "Desbloquear",

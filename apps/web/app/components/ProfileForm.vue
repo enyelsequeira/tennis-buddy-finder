@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from "@nuxt/ui";
+import {
+  Box,
+  Button,
+  Checkbox,
+  Group,
+  NumberInput,
+  Radio,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+  Title,
+} from "@mantine-vue/core";
+import { useForm, type FormErrors } from "@mantine-vue/form";
 import {
   NTRP_VALUES,
   profileInputSchema,
   type ProfileInput,
 } from "@tennis-buddy-finder/backend/convex/model/profileSchema";
+import type * as z from "zod";
 
 /**
  * The profile form shared by onboarding (create) and settings (edit). It owns
@@ -26,7 +41,7 @@ const { t } = useI18n();
 
 const ntrpItems = computed(() =>
   NTRP_VALUES.map((value) => ({
-    value,
+    value: ntrpValue(value),
     label: value.toFixed(1),
     description: t(`onboarding.ntrpLevels.${ntrpKey(value)}`),
   })),
@@ -48,26 +63,45 @@ const languageItems = computed(() =>
   })),
 );
 
-const state = reactive<Partial<ProfileInput>>({
-  displayName: props.initial?.displayName ?? "",
-  birthDate: props.initial?.birthDate ?? "",
-  gender: props.initial?.gender,
-  ntrp: props.initial?.ntrp,
-  yearsPlaying: props.initial?.yearsPlaying ?? 0,
-  formats: props.initial?.formats,
-  handedness: props.initial?.handedness,
-  languages: [...(props.initial?.languages ?? ["pt"])],
-  bio: props.initial?.bio ?? "",
-});
+/**
+ * What the inputs hold, as opposed to what the schema accepts: radio values
+ * are strings, a cleared `Select` yields `null` and an emptied `NumberInput`
+ * yields `""`. `toInput` converts back before every parse.
+ */
+interface ProfileFormValues {
+  displayName: string;
+  birthDate: string;
+  gender: ProfileInput["gender"] | null;
+  ntrp: string;
+  yearsPlaying: number | string;
+  formats: ProfileInput["formats"] | null;
+  handedness: ProfileInput["handedness"] | null;
+  languages: string[];
+  bio: string;
+}
 
-const bioLength = computed(() => state.bio?.length ?? 0);
+/** `3.5` -> `"3.5"`: the radio value of an NTRP rating. */
+function ntrpValue(value: number) {
+  return value.toFixed(1);
+}
+
+function toInput(values: ProfileFormValues) {
+  return {
+    ...values,
+    gender: values.gender ?? undefined,
+    handedness: values.handedness ?? undefined,
+    formats: values.formats ?? undefined,
+    ntrp: values.ntrp === "" ? undefined : Number(values.ntrp),
+    yearsPlaying: values.yearsPlaying === "" ? undefined : values.yearsPlaying,
+  };
+}
 
 /**
  * Translated validation messages. The shared zod schema reports either plain
  * zod text or a backend code (`UNDERAGE`, `INVALID_BIRTH_DATE`, `INVALID_NTRP`),
- * so `schema` below wraps it as a Standard Schema that rewrites every issue's
- * message by field. Wrapping (instead of `@error`) keeps the messages
- * translated on blur and input validation too, not only on submit.
+ * so `validate` below maps every issue to a translated field error. Going
+ * through `validate` (instead of translating on submit) keeps the messages
+ * translated on blur validation too, not only on submit.
  */
 const VALIDATION_FIELDS = [
   "displayName",
@@ -83,192 +117,202 @@ type ValidationField = (typeof VALIDATION_FIELDS)[number];
 const isValidationField = (name: string): name is ValidationField =>
   (VALIDATION_FIELDS as readonly string[]).includes(name);
 
-type StandardValidate = (typeof profileInputSchema)["~standard"]["validate"];
-type StandardIssue = NonNullable<Awaited<ReturnType<StandardValidate>>["issues"]>[number];
-
-function fieldName(issue: StandardIssue) {
-  const head = issue.path?.[0];
-  if (head === undefined) return "";
-  return String(typeof head === "object" ? head.key : head);
-}
-
-function translateIssue(issue: StandardIssue): StandardIssue {
-  const name = fieldName(issue);
-  if (!isValidationField(name)) return issue;
-  const key = name === "birthDate" && issue.message === "UNDERAGE" ? "underage" : name;
+function translateIssue(issue: z.core.$ZodIssue) {
   // Collapse `languages.0` to `languages` so the field picks the error up.
-  return { message: t(`onboarding.validation.${key}`), path: [name] };
+  const name = String(issue.path[0] ?? "");
+  if (!isValidationField(name)) return { field: name, message: issue.message };
+  const key = name === "birthDate" && issue.message === "UNDERAGE" ? "underage" : name;
+  return { field: name, message: t(`onboarding.validation.${key}`) };
 }
 
-const schema = computed(() => ({
-  "~standard": {
-    ...profileInputSchema["~standard"],
-    validate: async (value: unknown) => {
-      const result = await profileInputSchema["~standard"].validate(value);
-      return result.issues ? { issues: result.issues.map(translateIssue) } : result;
-    },
+function validate(values: ProfileFormValues): FormErrors {
+  const result = profileInputSchema.safeParse(toInput(values));
+  if (result.success) return {};
+  const errors: FormErrors = {};
+  for (const issue of result.error.issues) {
+    const { field, message } = translateIssue(issue);
+    errors[field] ??= message;
+  }
+  return errors;
+}
+
+const form = useForm<ProfileFormValues>({
+  initialValues: {
+    displayName: props.initial?.displayName ?? "",
+    birthDate: props.initial?.birthDate ?? "",
+    gender: props.initial?.gender ?? null,
+    ntrp: props.initial?.ntrp === undefined ? "" : ntrpValue(props.initial.ntrp),
+    yearsPlaying: props.initial?.yearsPlaying ?? 0,
+    formats: props.initial?.formats ?? null,
+    handedness: props.initial?.handedness ?? null,
+    languages: [...(props.initial?.languages ?? ["pt"])],
+    bio: props.initial?.bio ?? "",
   },
-}));
+  validate,
+  validateInputOnBlur: true,
+});
 
-function onSubmit(event: FormSubmitEvent<ProfileInput>) {
-  emit("submit", { ...event.data, bio: event.data.bio?.trim() || undefined });
-}
+const bioLength = computed(() => form.values.value.bio.length);
+const bioDescription = computed(
+  () =>
+    `${t("onboarding.optional")} · ${t("onboarding.fields.bioCounter", { count: bioLength.value })}`,
+);
+
+const handleSubmit = form.onSubmit((values) => {
+  const result = profileInputSchema.safeParse(toInput(values));
+  if (!result.success) return;
+  emit("submit", { ...result.data, bio: result.data.bio?.trim() || undefined });
+});
 </script>
 
 <template>
-  <UForm :schema="schema" :state="state" class="space-y-8" @submit="onSubmit">
-    <section class="space-y-4">
-      <h2 class="font-display font-bold text-[15px] text-highlighted">
-        {{ t("onboarding.sections.aboutYou") }}
-      </h2>
+  <form novalidate @submit="handleSubmit">
+    <Stack gap="xl">
+      <Stack gap="md">
+        <Title :order="2" :fz="15">{{ t("onboarding.sections.aboutYou") }}</Title>
 
-      <UFormField name="displayName" :label="t('onboarding.fields.displayName')" required>
-        <UInput
-          v-model="state.displayName"
-          autocomplete="nickname"
-          size="lg"
-          class="w-full"
-          :maxlength="40"
+        <TextInput
+          :label="t('onboarding.fields.displayName')"
           :placeholder="t('onboarding.fields.displayNamePlaceholder')"
+          autocomplete="nickname"
+          :maxlength="40"
+          size="lg"
+          with-asterisk
+          v-bind="form.getInputProps('displayName')"
         />
-      </UFormField>
 
-      <UFormField
-        v-if="!hideBirthDate"
-        name="birthDate"
-        :label="t('onboarding.fields.birthDate')"
-        required
-      >
-        <UInput
-          v-model="state.birthDate"
+        <TextInput
+          v-if="!hideBirthDate"
+          :label="t('onboarding.fields.birthDate')"
           type="date"
           autocomplete="bday"
           size="lg"
-          class="w-full"
+          with-asterisk
+          v-bind="form.getInputProps('birthDate')"
         />
-      </UFormField>
 
-      <UFormField
-        name="gender"
-        :label="t('onboarding.fields.gender')"
-        :hint="t('onboarding.optional')"
-      >
-        <USelect
-          v-model="state.gender"
-          :items="genderItems"
-          value-key="value"
+        <Select
+          :label="t('onboarding.fields.gender')"
+          :description="t('onboarding.optional')"
+          :data="genderItems"
+          clearable
           size="lg"
-          class="w-full"
+          v-bind="form.getInputProps('gender')"
         />
-      </UFormField>
-    </section>
+      </Stack>
 
-    <section class="space-y-4">
-      <h2 class="font-display font-bold text-[15px] text-highlighted">
-        {{ t("onboarding.sections.yourTennis") }}
-      </h2>
+      <Stack gap="md">
+        <Title :order="2" :fz="15">{{ t("onboarding.sections.yourTennis") }}</Title>
 
-      <UFormField
-        name="ntrp"
-        :label="t('onboarding.fields.ntrp')"
-        :description="t('onboarding.fields.ntrpHelp')"
-        required
-      >
-        <URadioGroup
-          v-model="state.ntrp"
-          variant="card"
-          :items="ntrpItems"
-          value-key="value"
-          :ui="{
-            fieldset: 'gap-2',
-            label: 'font-display font-bold text-base',
-            description: 'max-w-prose',
-          }"
-        />
-      </UFormField>
+        <Radio.Group
+          :label="t('onboarding.fields.ntrp')"
+          :description="t('onboarding.fields.ntrpHelp')"
+          with-asterisk
+          v-bind="form.getInputProps('ntrp')"
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio.Card
+              v-for="item in ntrpItems"
+              :key="item.value"
+              :value="item.value"
+              radius="lg"
+              p="md"
+            >
+              <Group wrap="nowrap" align="flex-start" gap="sm">
+                <Radio.Indicator :mt="2" />
+                <div>
+                  <Text ff="heading" fw="700" fz="md" lh="1.3">{{ item.label }}</Text>
+                  <Text size="sm" c="dimmed" maw="65ch">{{ item.description }}</Text>
+                </div>
+              </Group>
+            </Radio.Card>
+          </Stack>
+        </Radio.Group>
 
-      <UFormField name="yearsPlaying" :label="t('onboarding.fields.yearsPlaying')" required>
-        <UInputNumber v-model="state.yearsPlaying" :min="0" :max="90" size="lg" class="w-full" />
-      </UFormField>
-
-      <UFormField name="formats" :label="t('onboarding.fields.formats')" required>
-        <URadioGroup
-          v-model="state.formats"
-          orientation="horizontal"
-          :items="formatItems"
-          value-key="value"
-        />
-      </UFormField>
-
-      <UFormField
-        name="handedness"
-        :label="t('onboarding.fields.handedness')"
-        :hint="t('onboarding.optional')"
-      >
-        <USelect
-          v-model="state.handedness"
-          :items="handednessItems"
-          value-key="value"
+        <NumberInput
+          :label="t('onboarding.fields.yearsPlaying')"
+          :min="0"
+          :max="90"
+          :allow-decimal="false"
+          :allow-negative="false"
           size="lg"
-          class="w-full"
+          with-asterisk
+          v-bind="form.getInputProps('yearsPlaying')"
         />
-      </UFormField>
-    </section>
 
-    <section class="space-y-4">
-      <h2 class="font-display font-bold text-[15px] text-highlighted">
-        {{ t("onboarding.sections.languages") }}
-      </h2>
+        <Radio.Group
+          :label="t('onboarding.fields.formats')"
+          with-asterisk
+          v-bind="form.getInputProps('formats')"
+        >
+          <Group gap="md" mt="xs">
+            <Radio
+              v-for="item in formatItems"
+              :key="item.value"
+              :value="item.value"
+              :label="item.label"
+            />
+          </Group>
+        </Radio.Group>
 
-      <UFormField name="languages" :label="t('onboarding.fields.languages')" required>
-        <UCheckboxGroup
-          v-model="state.languages"
-          orientation="horizontal"
-          :items="languageItems"
-          value-key="value"
-        />
-      </UFormField>
-    </section>
-
-    <section class="space-y-4">
-      <h2 class="font-display font-bold text-[15px] text-highlighted">
-        {{ t("onboarding.sections.bio") }}
-      </h2>
-
-      <UFormField
-        name="bio"
-        :label="t('onboarding.fields.bio')"
-        :hint="t('onboarding.optional')"
-        :help="t('onboarding.fields.bioCounter', { count: bioLength })"
-      >
-        <UTextarea
-          v-model="state.bio"
-          :maxlength="PROFILE_BIO_MAX"
-          :rows="3"
-          :maxrows="8"
-          autoresize
+        <Select
+          :label="t('onboarding.fields.handedness')"
+          :description="t('onboarding.optional')"
+          :data="handednessItems"
+          clearable
           size="lg"
-          class="w-full"
+          v-bind="form.getInputProps('handedness')"
+        />
+      </Stack>
+
+      <Stack gap="md">
+        <Title :order="2" :fz="15">{{ t("onboarding.sections.languages") }}</Title>
+
+        <Checkbox.Group
+          :label="t('onboarding.fields.languages')"
+          with-asterisk
+          v-bind="form.getInputProps('languages')"
+        >
+          <Group gap="md" mt="xs">
+            <Checkbox
+              v-for="item in languageItems"
+              :key="item.value"
+              :value="item.value"
+              :label="item.label"
+            />
+          </Group>
+        </Checkbox.Group>
+      </Stack>
+
+      <Stack gap="md">
+        <Title :order="2" :fz="15">{{ t("onboarding.sections.bio") }}</Title>
+
+        <Textarea
+          :label="t('onboarding.fields.bio')"
+          :description="bioDescription"
           :placeholder="t('onboarding.fields.bioPlaceholder')"
+          :maxlength="PROFILE_BIO_MAX"
+          autosize
+          :min-rows="3"
+          :max-rows="8"
+          size="lg"
+          v-bind="form.getInputProps('bio')"
         />
-      </UFormField>
-    </section>
+      </Stack>
 
-    <div class="flex items-start gap-2">
-      <UIcon name="i-lucide-map-pin" class="mt-0.5 size-4 shrink-0 text-muted" />
-      <p class="text-sm">
-        <span class="font-medium text-highlighted">{{ t("onboarding.location") }}</span>
-        <span class="block text-muted">{{ t("onboarding.locationHelp") }}</span>
-      </p>
-    </div>
+      <Group gap="xs" align="flex-start" wrap="nowrap">
+        <Box component="span" c="dimmed" :mt="2" display="inline-flex" style="flex-shrink: 0">
+          <Icon name="lucide:map-pin" size="16" />
+        </Box>
+        <div>
+          <Text size="sm" fw="500">{{ t("onboarding.location") }}</Text>
+          <Text size="sm" c="dimmed">{{ t("onboarding.locationHelp") }}</Text>
+        </div>
+      </Group>
 
-    <UButton
-      type="submit"
-      :label="submitLabel"
-      size="lg"
-      block
-      :loading="pending"
-      :disabled="disabled"
-    />
-  </UForm>
+      <Button type="submit" size="lg" full-width :loading="pending" :disabled="disabled">
+        {{ submitLabel }}
+      </Button>
+    </Stack>
+  </form>
 </template>

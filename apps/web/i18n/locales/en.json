@@ -14,6 +14,8 @@
     "signIn": "Sign in",
     "createAccount": "Create account",
     "language": "Language",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
     "demo": "Demo",
     "main": "Main navigation",
     "find": "Find",
@@ -363,6 +365,11 @@
     "language": "Language",
     "languageHelp": "Choose the app language.",
     "appearance": "Appearance",
+    "theme": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "blocked": "Blocked players",
     "blockedEmpty": "You have not blocked anyone.",
     "unblock": "Unblock",
