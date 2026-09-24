@@ -51,7 +51,7 @@ export function useLisbonTime() {
   const formatRange = ({ startAt, endAt }: TimeRange) =>
     `${formatTime(startAt)}–${formatTime(endAt)}`;
 
-  function formatDuration({ startAt, endAt }: TimeRange): string {
+  function formatDuration({ startAt, endAt }: TimeRange) {
     const minutes = dayjs(endAt).diff(startAt, "minute");
     const hours = Math.floor(minutes / 60);
     const rest = minutes % 60;
@@ -73,8 +73,13 @@ export function useLisbonTime() {
   /** "2026" */
   const formatYear = (ms: number) => lisbon(ms).format("YYYY");
 
+  /** Whole years since an ISO `YYYY-MM-DD` birth date, on the Lisbon calendar. */
+  const ageFromBirthDate = (birthDate: string) =>
+    lisbon(now()).diff(dayjs.tz(birthDate, LISBON_TZ), "year");
+
   return {
     now,
+    ageFromBirthDate,
     startOfDay,
     addDays,
     atTime,

@@ -14,7 +14,16 @@
     "signIn": "Entrar",
     "createAccount": "Criar conta",
     "language": "Idioma",
-    "demo": "Demo"
+    "demo": "Demo",
+    "main": "Navegação principal",
+    "find": "Encontrar",
+    "calendar": "Calendário",
+    "requests": "Pedidos",
+    "messages": "Mensagens",
+    "me": "Eu",
+    "settings": "Definições",
+    "signOut": "Terminar sessão",
+    "account": "Conta"
   },
   "playground": {
     "title": "Demo de traduções",
@@ -154,5 +163,211 @@
   },
   "footer": {
     "copyright": "© {year} Tennis Buddy"
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sessão",
+      "subtitle": "Bem-vindo de volta. Entra para ver quem está livre para jogar.",
+      "submit": "Iniciar sessão",
+      "noAccount": "Ainda não tens conta?",
+      "createOne": "Criar conta",
+      "seoTitle": "Iniciar sessão · Tennis Buddy",
+      "seoDescription": "Entra na tua conta Tennis Buddy para veres quem está livre para jogar ténis na Figueira da Foz."
+    },
+    "register": {
+      "title": "Criar conta",
+      "subtitle": "Leva um minuto. Depois dizes quando podes jogar.",
+      "submit": "Criar conta",
+      "haveAccount": "Já tens conta?",
+      "signIn": "Iniciar sessão",
+      "seoTitle": "Criar conta · Tennis Buddy",
+      "seoDescription": "Cria a tua conta Tennis Buddy e encontra um parceiro de ténis ao teu nível na Figueira da Foz."
+    },
+    "providers": {
+      "google": "Continuar com Google",
+      "facebook": "Continuar com Facebook"
+    },
+    "divider": "ou com email",
+    "showcase": {
+      "ariaLabel": "Ilustração de um campo de ténis com uma raquete pousada no chão",
+      "title": "Quem está livre à mesma hora que tu.",
+      "description": "Os jogadores da Figueira da Foz publicam as horas em que podem jogar. Escolhe uma ao teu nível e pede para jogar."
+    },
+    "fields": {
+      "name": "Nome",
+      "namePlaceholder": "Como te chamam no campo",
+      "email": "Email",
+      "emailPlaceholder": "tu{'@'}exemplo.pt",
+      "password": "Palavra-passe",
+      "passwordPlaceholder": "A tua palavra-passe",
+      "newPasswordPlaceholder": "Pelo menos 8 caracteres"
+    },
+    "validation": {
+      "emailInvalid": "Introduz um email válido.",
+      "passwordRequired": "Introduz a tua palavra-passe.",
+      "nameMin": "O nome tem de ter pelo menos 2 caracteres.",
+      "nameMax": "O nome não pode ter mais de 60 caracteres.",
+      "passwordMin": "A palavra-passe tem de ter pelo menos 8 caracteres.",
+      "passwordMax": "A palavra-passe não pode ter mais de 128 caracteres."
+    },
+    "errors": {
+      "invalidCredentials": "Email ou palavra-passe incorretos. Confirma os dados e tenta outra vez.",
+      "emailNotVerified": "O email ainda não foi confirmado. Abre o link que te enviámos e volta a entrar.",
+      "userAlreadyExists": "Já existe uma conta com este email. Inicia sessão em vez disso.",
+      "invalidEmail": "Este email não é válido.",
+      "invalidPassword": "Esta palavra-passe não é válida.",
+      "passwordTooShort": "A palavra-passe é demasiado curta. Usa pelo menos 8 caracteres.",
+      "passwordTooLong": "A palavra-passe é demasiado longa. Usa no máximo 128 caracteres.",
+      "providerUnavailable": "Entrar com este serviço ainda não está disponível. Usa o email por agora.",
+      "accountAlreadyLinked": "Esta conta já está ligada a outro utilizador.",
+      "generic": "Não foi possível concluir o pedido. Verifica a ligação e tenta outra vez."
+    }
+  },
+  "onboarding": {
+    "title": "Conta-nos como jogas",
+    "subtitle": "Leva dois minutos. Com isto mostramos-te jogadores ao teu nível.",
+    "seoTitle": "Criar perfil · Tennis Buddy",
+    "optional": "Opcional",
+    "sections": {
+      "aboutYou": "Sobre ti",
+      "yourTennis": "O teu ténis",
+      "languages": "Idiomas",
+      "bio": "Bio"
+    },
+    "fields": {
+      "displayName": "Nome a mostrar",
+      "displayNamePlaceholder": "Como te chamam no campo",
+      "birthDate": "Data de nascimento",
+      "gender": "Género",
+      "ntrp": "Nível NTRP",
+      "ntrpHelp": "É uma autoavaliação. Na dúvida, escolhe o nível mais baixo; podes mudar nas definições.",
+      "yearsPlaying": "Anos a jogar",
+      "formats": "Formato",
+      "handedness": "Mão dominante",
+      "languages": "Idiomas em que consegues combinar um jogo",
+      "bio": "Bio",
+      "bioPlaceholder": "Como jogas, quando costumas estar livre, o que procuras num parceiro.",
+      "bioCounter": "{count}/500"
+    },
+    "genderOptions": {
+      "male": "Masculino",
+      "female": "Feminino",
+      "other": "Outro",
+      "unspecified": "Prefiro não dizer"
+    },
+    "ntrpLevels": {
+      "ntrp10": "Acabaste de começar a jogar ténis.",
+      "ntrp15": "Tens pouca experiência e ainda estás sobretudo a tentar pôr a bola em jogo.",
+      "ntrp20": "Precisas de tempo de campo: tens falhas claras nas pancadas, mas já conheces as posições base em singulares e pares.",
+      "ntrp25": "Começas a perceber para onde vai a bola e aguentas trocas curtas e lentas com jogadores do teu nível, embora a cobertura do campo ainda seja fraca.",
+      "ntrp30": "És razoavelmente consistente em bolas de ritmo médio, mas ainda não dominas todas as pancadas nem controlas bem a direção, a profundidade ou a potência.",
+      "ntrp35": "As tuas pancadas são fiáveis, com controlo de direção em bolas moderadas, mas ainda faltam profundidade e variedade; começas a subir mais à rede.",
+      "ntrp40": "Tens pancadas fiáveis dos dois lados, com direção e profundidade, e usas lobs, smashes, aproximações e voleios com algum sucesso.",
+      "ntrp45": "Começas a dominar a potência e os efeitos, aguentas ritmo, controlas a profundidade e adaptas o plano de jogo ao adversário; o primeiro serviço tem potência e precisão.",
+      "ntrp50": "Antecipas bem e tens uma pancada forte à volta da qual constróis o jogo; fechas pontos em bolas curtas e voleios e executas lobs, amorties e meios-voleios.",
+      "ntrp55": "A potência ou a consistência são a tua arma principal; varias estratégias e estilos em competição e manténs pancadas fiáveis sob pressão.",
+      "ntrp60": "Tiveste treino intensivo para competição nacional a nível júnior ou universitário e já tiveste ranking regional ou nacional.",
+      "ntrp65": "Tens experiência alargada em torneios internacionais de nível satélite ou equivalente.",
+      "ntrp70": "Jogador de classe mundial, dedicado à competição internacional e a viver dos prémios dos torneios."
+    },
+    "formatOptions": {
+      "singles": "Singulares",
+      "doubles": "Pares",
+      "both": "Ambos"
+    },
+    "handednessOptions": {
+      "right": "Destro",
+      "left": "Canhoto"
+    },
+    "languageOptions": {
+      "pt": "Português",
+      "en": "Inglês",
+      "es": "Espanhol",
+      "fr": "Francês",
+      "de": "Alemão",
+      "it": "Italiano"
+    },
+    "location": "Figueira da Foz, Coimbra",
+    "locationHelp": "Por agora, só Figueira da Foz.",
+    "submit": "Concluir",
+    "success": "Perfil criado",
+    "validation": {
+      "displayName": "O nome tem de ter entre 2 e 40 caracteres.",
+      "birthDate": "Introduz a tua data de nascimento.",
+      "underage": "Tens de ter pelo menos 18 anos para usar a app.",
+      "ntrp": "Escolhe o teu nível NTRP.",
+      "yearsPlaying": "Introduz um número inteiro entre 0 e 90.",
+      "formats": "Escolhe o formato em que jogas.",
+      "languages": "Escolhe pelo menos um idioma.",
+      "bio": "A bio não pode ter mais de 500 caracteres."
+    },
+    "errors": {
+      "profileExists": "Já tens um perfil. A levar-te para a app.",
+      "generic": "Não foi possível guardar o perfil. Verifica a ligação e tenta outra vez."
+    }
+  },
+  "shell": {
+    "comingSoonTitle": "Em breve",
+    "comingSoonDescription": "Esta parte ainda está a ser construída."
+  },
+  "pages": {
+    "find": {
+      "title": "Encontrar jogo"
+    },
+    "calendar": {
+      "title": "A minha disponibilidade"
+    },
+    "requests": {
+      "title": "Pedidos"
+    },
+    "messages": {
+      "title": "Mensagens"
+    },
+    "settings": {
+      "title": "Definições"
+    }
+  },
+  "playerPage": {
+    "seoTitle": "{name} · Tennis Buddy",
+    "openSlots": "Horários livres",
+    "location": "{municipality}, {district}",
+    "age": "{age} anos",
+    "handedness": {
+      "right": "Destro",
+      "left": "Canhoto"
+    },
+    "notFoundTitle": "Jogador não encontrado",
+    "notFoundDescription": "Este perfil não existe ou já não está disponível.",
+    "backToFind": "Voltar à procura",
+    "menu": "Mais opções",
+    "block": "Bloquear",
+    "blockTitle": "Bloquear {name}?",
+    "blockDescription": "Deixam de se ver um ao outro: sem horários, pedidos nem mensagens entre vocês.",
+    "blockConfirm": "Bloquear",
+    "blocked": "Bloqueado",
+    "blockError": "Não foi possível bloquear. Verifica a ligação e tenta outra vez.",
+    "cancel": "Cancelar",
+    "thisIsYou": "Este és tu. É assim que os outros jogadores te veem.",
+    "editProfile": "Editar perfil"
+  },
+  "settings": {
+    "profile": "Perfil",
+    "editProfile": "Editar perfil",
+    "cancelEdit": "Cancelar",
+    "saveProfile": "Guardar alterações",
+    "profileUpdated": "Perfil atualizado",
+    "publicProfile": "Ver perfil público",
+    "notifications": "Notificações",
+    "emailNotifications": "Notificações por email",
+    "emailNotificationsHelp": "Recebe um email quando alguém te pede para jogar ou responde a um pedido teu.",
+    "language": "Idioma",
+    "languageHelp": "Escolhe o idioma da app.",
+    "appearance": "Aspeto",
+    "blocked": "Jogadores bloqueados",
+    "blockedEmpty": "Não bloqueaste ninguém.",
+    "unblock": "Desbloquear",
+    "unblocked": "Jogador desbloqueado",
+    "account": "Conta",
+    "saveFailed": "Não foi possível guardar. Tenta outra vez."
   }
 }

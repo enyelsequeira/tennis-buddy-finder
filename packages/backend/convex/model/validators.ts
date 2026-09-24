@@ -59,7 +59,7 @@ export const notificationTypeValidator = v.union(
   v.literal("new_message"),
 );
 
-/** Return validator for `.paginate()` results. */
+/** Return validator for `.paginate()` results. Unused until the availability task lists slots. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic validator bound
 export function paginated<T extends Validator<any, "required", any>>(item: T) {
   return v.object({

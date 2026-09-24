@@ -1,6 +1,8 @@
 <script setup lang="ts">
+// Signed-in visitors skip the landing page and go straight to /find.
 definePageMeta({
   layout: "landing",
+  middleware: "guest",
 });
 
 const { t } = useI18n();
