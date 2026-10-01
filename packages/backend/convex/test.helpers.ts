@@ -5,9 +5,7 @@ import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
 
-/** Unused until the availability tests build slot windows around `NOW`. */
 export const HOUR = 60 * 60 * 1000;
-/** Unused until the availability tests build slot windows around `NOW`. */
 export const DAY = 24 * HOUR;
 /** 2026-09-08T12:00:00.000Z, a Tuesday. */
 export const NOW = Date.UTC(2026, 8, 8, 12, 0, 0);

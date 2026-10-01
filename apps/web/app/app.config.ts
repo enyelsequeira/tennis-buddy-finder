@@ -16,6 +16,19 @@ export default defineAppConfig({
         root: "rounded-2xl",
       },
     },
+    // Login / register (pages/(auth)/*). Left-aligned inside the auth layout
+    // column instead of the centred default, with the display title.
+    authForm: {
+      slots: {
+        header: "text-left",
+        title: `${displayTitle} font-bold text-[22px] md:text-[26px]`,
+        description: "text-sm",
+        body: "gap-y-5",
+        providers: "space-y-2",
+        form: "space-y-4",
+        footer: "text-left mt-0",
+      },
+    },
     pageHero: {
       slots: {
         title: displayTitle,

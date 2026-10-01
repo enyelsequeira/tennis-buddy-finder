@@ -1,25 +1,22 @@
 <script setup lang="ts">
-/**
- * Public profile of one player, reached from search results. Mounted by
- * `pages/(app)/players/[id].vue` only once the Convex client is authenticated,
- * so both queries subscribe with a token.
- */
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
 import type { Id } from "@tennis-buddy-finder/backend/convex/_generated/dataModel";
 import type { DropdownMenuItem } from "@nuxt/ui";
+import type { OpenSlot } from "~/types/slots";
 
 const props = defineProps<{ userId: Id<"users"> }>();
 
 const { t } = useI18n();
 const localePath = useLocalePath();
 const toast = useToast();
+const { startOfDay, formatLongDay } = useLisbonTime();
 
 const {
   data: profile,
   error,
   isPending,
-} = useConvexQuery(api.profiles.getByUserId, () => ({ userId: props.userId }), { server: false });
-const { data: me } = useConvexQuery(api.users.me, {}, { server: false });
+} = useAuthedQuery(api.profiles.getByUserId, () => ({ userId: props.userId }));
+const { data: me } = useAuthedQuery(api.users.me);
 
 const isMe = computed(() => me.value?.user._id === props.userId);
 
@@ -58,6 +55,26 @@ const facts = computed(() => {
     ...languages.map((code) => code.toUpperCase()),
   ];
 });
+
+const {
+  data: openSlots,
+  error: slotsError,
+  isPending: slotsPending,
+} = useAuthedQuery(api.availability.listOpenForUser, () => ({ userId: props.userId }));
+const { data: venues } = useAuthedQuery(api.venues.list);
+
+const slotDays = computed(() => {
+  const player = profile.value;
+  if (!player) return [];
+  const map = new Map<number, OpenSlot[]>();
+  for (const slot of openSlots.value ?? []) {
+    const day = startOfDay(slot.startAt);
+    map.set(day, [...(map.get(day) ?? []), toOpenSlot({ slot, player, venues: venues.value })]);
+  }
+  return [...map];
+});
+
+const { requested, asking, askOpen, ask } = useAskToPlay();
 
 const blockOpen = ref(false);
 
@@ -175,8 +192,45 @@ async function confirmBlock() {
       <h2 class="font-display font-bold text-sm md:text-[15px] text-highlighted">
         {{ t("playerPage.openSlots") }}
       </h2>
-      <ComingSoon />
+
+      <div v-if="slotsPending" class="grid gap-2 md:gap-3">
+        <USkeleton v-for="n in 2" :key="n" class="h-[118px] rounded-2xl" />
+      </div>
+
+      <UAlert
+        v-else-if="slotsError"
+        color="error"
+        variant="soft"
+        icon="i-lucide-triangle-alert"
+        :title="t('find.error')"
+      />
+
+      <UEmpty
+        v-else-if="!slotDays.length"
+        icon="i-lucide-calendar-days"
+        :description="t('playerPage.noSlots', { name: profile.displayName })"
+        :ui="{ root: 'py-10 rounded-2xl bg-elevated ring ring-default' }"
+      />
+
+      <template v-else>
+        <section v-for="[day, slots] in slotDays" :key="day" class="space-y-2">
+          <h3 class="text-sm font-medium text-muted">{{ formatLongDay(day) }}</h3>
+          <ul class="grid gap-2 md:gap-3">
+            <li v-for="slot in slots" :key="slot.id">
+              <SlotCard
+                :slot="slot"
+                :requested="requested.has(slot.id)"
+                :hide-ask="isMe"
+                hide-identity
+                @ask="ask(slot)"
+              />
+            </li>
+          </ul>
+        </section>
+      </template>
     </div>
+
+    <AskToPlayModal v-if="asking" v-model:open="askOpen" :slot="asking" />
 
     <UModal
       v-model:open="blockOpen"

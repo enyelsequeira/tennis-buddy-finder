@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser, getProfileForUser } from "./model/auth";
 import { fail } from "./model/errors";
+import { cancelPendingBetween } from "./model/requests";
 
 export const block = mutation({
   args: { userId: v.id("users") },
@@ -21,6 +22,7 @@ export const block = mutation({
     if (!existing) {
       await ctx.db.insert("blocks", { blockerId: me._id, blockedId: args.userId });
     }
+    await cancelPendingBetween(ctx, { userId: me._id, otherUserId: args.userId });
     return null;
   },
 });

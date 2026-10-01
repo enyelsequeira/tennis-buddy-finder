@@ -39,16 +39,16 @@ app/
   pages/               file-based routing in route groups; the "(group)" segment is not part of the URL
     (marketing)/       index.vue (landing, layout "landing", guest), demo.vue
     (auth)/            login.vue, register.vue (layout "auth", guest)
-    (app)/             find.vue, calendar.vue, requests.vue, messages/index.vue, settings.vue (default layout, auth + onboarded)
+    (app)/             find.vue, calendar.vue, requests.vue, messages/index.vue, settings.vue, players/[id].vue (default layout; guarded as a group by middleware/app.global.ts)
     onboarding.vue     layout "auth" with `authWide`, middleware auth
   layouts/             default.vue = app shell (<AppHeader /> at md+, <AppTabBar /> below, UMain > UContainer)
                        auth.vue = centred column (400px, 560px with page meta `authWide`); landing.vue = marketing chrome
   components/          auto-imported, PascalCase, name = file name (AppHeader.vue -> <AppHeader />)
                        shell: AppHeader, AppTabBar, AppWordmark, LocaleSwitcher, ComingSoon (placeholder body)
   composables/         auto-imported `use*.ts` (useLisbonTime, useAuthSession, useSignOut, useCurrentUser,
-                       useConvexToken, useConvexAuthReady)
-  middleware/          route guards: `auth`, `guest`, `onboarded`, `admin` -> definePageMeta({ middleware: ["auth", "onboarded"] }); `*.global.ts` runs everywhere
-  utils/               auto-imported plain helpers (auth-client.ts, authErrors.ts, authSchemas.ts)
+                       useAuthedQuery, useConvexAuthReady, useAskToPlay, useUnreadNotifications)
+  middleware/          `app.global.ts` guards every page in `pages/(app)`; named guards `auth`, `guest`, `admin` -> definePageMeta({ middleware: "guest" })
+  utils/               auto-imported plain helpers (auth-client.ts, convexToken.ts, convexError.ts, openSlot.ts, authErrors.ts, authSchemas.ts)
   plugins/             defineNuxtPlugin (convex-auth.client.ts wires Better Auth tokens into Convex, sets useConvexAuthReady)
 server/                Nitro routes — only api/auth/[...all].ts (Better Auth proxy); add nothing else without a reason
 public/                static files (favicon, robots.txt)
@@ -165,8 +165,10 @@ Rules:
   (see `app/pages/todos.vue` for the canonical loading -> error -> empty -> list pattern
   with `USkeleton`, `UAlert`, `UEmpty`). The composable's return object itself is never
   `undefined`, only `data.value` is.
-- Queries subscribe on the client and are prefetched on the server for SSR; pass
-  `{ server: false }` as the options arg to skip SSR for a query.
+- Every query that needs the signed-in user (all of `pages/(app)`) goes through
+  `useAuthedQuery(api.x.y, args)`: same `{ data, error, isPending }`, client-only, and it
+  stays pending until the WebSocket client holds a token. Plain `useConvexQuery` is only
+  for public data (it runs unauthenticated during SSR and right after hydration).
 - Keep validation and business rules in Convex functions (`packages/backend/convex/*.ts`),
   not in components. Components only shape UI state and call `mutate`.
 - Use `Id<"table">` / `Doc<"table">` from the generated `dataModel` for ids and rows;
@@ -218,41 +220,42 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 Better Auth runs inside Convex (`@convex-dev/better-auth`, `packages/backend/convex/auth.ts`)
 and is reached through a same-origin proxy so the session cookie is first-party.
 
-| File                                | Role                                                                                                                                                        |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/utils/auth-client.ts`          | `authClient` from `better-auth/vue` with the `convexClient()` plugin. Import it as `import { authClient } from "~/utils/auth-client"`.                      |
-| `server/api/auth/[...all].ts`       | Nitro catch-all that proxies `/api/auth/*` to `${NUXT_CONVEX_SITE_URL}/api/auth/*` (method, query, body, `Origin`, `Cookie` and `Set-Cookie` pass through). |
-| `app/composables/useAuthSession.ts` | `await useAuthSession()` -> `{ session, isSignedIn }` computed refs, SSR-hydrated via `useFetch`. `AuthSession` type exported alongside.                     |
-| `app/composables/useSignOut.ts`     | `useSignOut()` -> `{ signOut, isPending }`; `signOut()` calls `authClient.signOut()` then `navigateTo(localePath("/login"))`.                               |
-| `app/middleware/auth.ts`            | Named middleware for protected pages: redirects to the localized `/login?redirect=<fullPath>` when signed out.                                              |
-| `app/middleware/guest.ts`           | Named middleware for landing/login/register: redirects to the localized `/find` when signed in.                                                             |
-| `app/middleware/onboarded.ts`       | Named middleware for app pages (after `auth`): a signed-in user with no profile is sent to the localized `/onboarding`.                                     |
-| `app/middleware/admin.ts`           | Named middleware (after `auth`, `onboarded`): anyone whose `user.role` is not `"admin"` is sent to `/find`.                                                |
-| `app/composables/useCurrentUser.ts` | `await useCurrentUser()` -> `{ me, refresh }`; `me` is `Ref<CurrentUser \| null>` from `api.users.me` (`{ user, profile }`), null when signed out.         |
-| `app/composables/useConvexToken.ts` | `fetchConvexToken()` -> Convex JWT or null; server side exchanges the request cookie via `getToken`, client side uses `authClient.convex.token()`.           |
-| `app/composables/useConvexAuthReady.ts` | `useConvexAuthReady()` -> `Ref<boolean>`, true once the Convex client holds a token for the session. Only the plugin writes it.                         |
-| `app/plugins/convex-auth.client.ts` | Client-only plugin that watches the session id and calls `convex.setAuth(fetchAccessToken, onChange)` / `convex.client.clearAuth()`; drives `useConvexAuthReady`. |
-| `app/plugins/auth-pageshow.client.ts` | Client-only bfcache guard: on `pageshow` with `persisted`, re-checks the session and re-applies the page's `auth` / `guest` guard (no middleware runs on a back/forward cache restore).                    |
+| File                                    | Role                                                                                                                                                                                                      |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/utils/auth-client.ts`              | `authClient` from `better-auth/vue` with the `convexClient()` plugin. Import it as `import { authClient } from "~/utils/auth-client"`.                                                                    |
+| `server/api/auth/[...all].ts`           | Nitro catch-all that proxies `/api/auth/*` to `${NUXT_CONVEX_SITE_URL}/api/auth/*` (method, query, body, `Origin`, `Cookie` and `Set-Cookie` pass through).                                               |
+| `app/composables/useAuthSession.ts`     | `await useAuthSession()` -> `{ session, isSignedIn }` computed refs, SSR-hydrated via `useFetch`. `AuthSession` type exported alongside.                                                                  |
+| `app/composables/useSignOut.ts`         | `useSignOut()` -> `{ signOut, isPending }`; `signOut()` calls `authClient.signOut()` then `navigateTo(localePath("/login"))`.                                                                             |
+| `app/middleware/app.global.ts`          | Global guard for every page in `pages/(app)` (`to.meta.groups`): signed out -> localized `/login?redirect=<fullPath>`, no profile -> `/onboarding`.                                                       |
+| `app/middleware/auth.ts`                | Named middleware for session-only pages outside the group (onboarding): redirects to the localized `/login?redirect=<fullPath>` when signed out.                                                          |
+| `app/middleware/guest.ts`               | Named middleware for landing/login/register: redirects to the localized `/find` when signed in.                                                                                                           |
+| `app/middleware/admin.ts`               | Named middleware for admin pages in `pages/(app)` (runs after the group guard): anyone whose `user.role` is not `"admin"` is sent to `/find`.                                                             |
+| `app/composables/useCurrentUser.ts`     | `await useCurrentUser()` -> `{ me, refresh }`; `me` is `Ref<CurrentUser \| null>` from `api.users.me` (`{ user, profile }`), null when signed out.                                                        |
+| `app/utils/convexToken.ts`              | `fetchConvexToken()` -> Convex JWT or null; server side exchanges the request cookie via `getToken`, client side uses `authClient.convex.token()`. Shared by `useCurrentUser` and the Convex auth plugin. |
+| `app/composables/useConvexAuthReady.ts` | `useConvexAuthReady()` -> `Ref<boolean>`, true once the Convex client holds a token for the session. Only the plugin writes it; `useAuthedQuery` reads it.                                                |
+| `app/composables/useAuthedQuery.ts`     | `useAuthedQuery(query, args?)` -> `{ data, error, isPending }`; live query that subscribes only once `useConvexAuthReady()` is true.                                                                      |
+| `app/plugins/convex-auth.client.ts`     | Client-only plugin that watches the session id and calls `convex.setAuth(fetchAccessToken, onChange)` / `convex.client.clearAuth()`; drives `useConvexAuthReady`.                                         |
+| `app/plugins/auth-pageshow.client.ts`   | Client-only bfcache guard: on `pageshow` with `persisted`, re-checks the session and re-applies the page's guard (`(app)` group, `auth` or `guest`) (no middleware runs on a back/forward cache restore). |
 
 Rules:
 
 - Session in pages and middleware: `const { isSignedIn } = await useAuthSession()`. For the user row and profile use `useCurrentUser()`.
   Client-only widgets that need a live ref (header avatar) use `authClient.useSession()`
   directly. Never read the cookie or call `/api/auth/get-session` by hand.
-- Guards are `auth`, `guest`, `onboarded`, `admin`. App pages under `pages/(app)`:
-  `definePageMeta({ middleware: ["auth", "onboarded"] })`; admin pages add `"admin"`;
+- Pages under `pages/(app)` declare no middleware: `app.global.ts` guards the whole group
+  (session and profile). Admin pages add `definePageMeta({ middleware: "admin" })`;
   onboarding uses `"auth"` alone. Guest-only pages (landing, login, register):
   `definePageMeta({ middleware: "guest" })`. Do not gate pages with ad-hoc `v-if` checks.
 - Current user (`users` row plus profile) for guards and the shell: `const { me } = await
-  useCurrentUser()`. It reads `api.users.me` over an authenticated `ConvexHttpClient`, so it
+useCurrentUser()`. It reads `api.users.me` over an authenticated `ConvexHttpClient`, so it
   is correct during SSR and on every client navigation. For live data on a page use
-  `useConvexQuery(api.users.me, {}, { server: false })` instead.
-- Mutations need the WebSocket client to hold a token: gate submit buttons on
-  `useConvexAuthReady()` (`:disabled="!ready"`) so a fresh sign-in cannot fire an
-  unauthenticated mutation.
+  `useAuthedQuery(api.users.me)` instead.
+- Pages never check `useConvexAuthReady()` for queries; `useAuthedQuery` does. The one
+  direct use is a mutation that can be submitted before any query has loaded (onboarding's
+  submit button, `:disabled="!ready"`).
 - Sign in / sign up / sign out go through `authClient.signIn.email`, `authClient.signUp.email`
   and `useSignOut()`. After a successful sign-in, `navigateTo` the `redirect` query param
-  (fall back to `localePath("/find")`). `onboarded` then sends users without a profile to
+  (fall back to `localePath("/find")`). The group guard then sends users without a profile to
   `/onboarding`.
 - Convex tokens are handled only by `plugins/convex-auth.client.ts`. Never call
   `setAuth` / `clearAuth` anywhere else. Convex functions read `ctx.auth.getUserIdentity()`.

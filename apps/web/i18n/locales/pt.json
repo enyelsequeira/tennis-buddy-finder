@@ -23,7 +23,8 @@
     "me": "Eu",
     "settings": "Definições",
     "signOut": "Terminar sessão",
-    "account": "Conta"
+    "account": "Conta",
+    "addAvailability": "Adicionar disponibilidade"
   },
   "playground": {
     "title": "Demo de traduções",
@@ -50,7 +51,8 @@
   "slot": {
     "status": {
       "open": "Livre",
-      "matched": "Combinado"
+      "matched": "Combinado",
+      "closed": "Indisponível"
     },
     "anyVenue": "Qualquer campo",
     "askToPlay": "Pedir para jogar",
@@ -74,6 +76,33 @@
       "accepted": "Aceite",
       "declined": "Recusado",
       "cancelled": "Cancelado"
+    },
+    "tabs": {
+      "received": "Recebidos",
+      "receivedCount": "Recebidos · {count}",
+      "sent": "Enviados"
+    },
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "cancel": "Cancelar pedido",
+    "openChat": "Abrir chat",
+    "toast": {
+      "accept": "Aceite, o chat está aberto",
+      "decline": "Recusado",
+      "cancel": "Pedido cancelado"
+    },
+    "empty": {
+      "receivedTitle": "Ainda não tens pedidos.",
+      "receivedDescription": "Adiciona disponibilidade e os jogadores perto de ti podem pedir para jogar.",
+      "sentTitle": "Ainda não enviaste pedidos."
+    },
+    "loadError": "Não foi possível carregar os pedidos. Verifica a ligação e tenta outra vez.",
+    "errors": {
+      "notPending": "Este pedido já foi respondido ou cancelado.",
+      "slotNotOpen": "Este horário já não está livre.",
+      "forbidden": "Não podes alterar este pedido.",
+      "notFound": "Este pedido já não existe.",
+      "generic": "Não foi possível concluir a ação. Verifica a ligação e tenta outra vez."
     }
   },
   "hero": {
@@ -310,6 +339,19 @@
     "comingSoonTitle": "Em breve",
     "comingSoonDescription": "Esta parte ainda está a ser construída."
   },
+  "notifications": {
+    "title": "Notificações",
+    "titleUnread": "Notificações por ler",
+    "unread": "por ler",
+    "empty": "Não tens notificações novas.",
+    "loadError": "Não foi possível carregar as notificações. Verifica a ligação e tenta outra vez.",
+    "types": {
+      "request_received": "Tens um novo pedido para jogar.",
+      "request_accepted": "O teu pedido para jogar foi aceite.",
+      "request_declined": "O teu pedido para jogar foi recusado.",
+      "new_message": "Tens uma mensagem nova."
+    }
+  },
   "pages": {
     "find": {
       "title": "Encontrar jogo"
@@ -325,6 +367,40 @@
     },
     "settings": {
       "title": "Definições"
+    }
+  },
+  "calendar": {
+    "subtitle": "Quando podes jogar",
+    "copyLastWeek": "Copiar a semana passada",
+    "copied": "Não havia horários para copiar | 1 horário copiado | {n} horários copiados",
+    "empty": "Não tens horários este mês. Adiciona quando podes jogar e os jogadores podem encontrar-te.",
+    "loadError": "Não foi possível carregar os horários. Verifica a ligação e tenta outra vez.",
+    "dayEmpty": "Ainda não tens horários neste dia.",
+    "addHeading": "Adicionar um horário",
+    "start": "Início",
+    "end": "Fim",
+    "note": "Nota",
+    "addSlot": "Adicionar horário",
+    "slotAdded": "Horário adicionado",
+    "removeSlot": "Remover horário",
+    "cancel": "Cancelar",
+    "cancelTitle": "Cancelar este jogo?",
+    "cancelDescription": "O outro jogador é avisado e o horário sai do teu calendário.",
+    "cancelConfirm": "Cancelar jogo",
+    "cancelKeep": "Manter jogo",
+    "matchCancelled": "Jogo cancelado",
+    "errors": {
+      "startRequired": "Escolhe a hora de início.",
+      "endRequired": "Escolhe a hora de fim.",
+      "endAfterStart": "O fim tem de ser depois do início.",
+      "tooLong": "Um horário pode ter no máximo 6 horas.",
+      "noteTooLong": "A nota pode ter no máximo 200 caracteres.",
+      "overlap": "Já tens um horário que se sobrepõe a este. Escolhe outras horas.",
+      "inPast": "Essa hora já passou. Escolhe uma hora mais tarde.",
+      "notOnGrid": "As horas têm de ser certas ou à meia hora.",
+      "notOpen": "Este horário já não está livre e não pode ser removido.",
+      "invalidVenue": "Este campo já não está disponível. Escolhe outro.",
+      "generic": "Não foi possível concluir a ação. Verifica a ligação e tenta outra vez."
     }
   },
   "playerPage": {
@@ -348,7 +424,45 @@
     "blockError": "Não foi possível bloquear. Verifica a ligação e tenta outra vez.",
     "cancel": "Cancelar",
     "thisIsYou": "Este és tu. É assim que os outros jogadores te veem.",
-    "editProfile": "Editar perfil"
+    "editProfile": "Editar perfil",
+    "noSlots": "{name} não tem horários livres de momento."
+  },
+  "find": {
+    "filters": "Filtros",
+    "timeOfDay": "Altura do dia",
+    "times": {
+      "any": "Qualquer",
+      "morning": "Manhã",
+      "afternoon": "Tarde",
+      "evening": "Fim de tarde"
+    },
+    "ntrpRange": "NTRP {min}–{max}",
+    "format": "Formato",
+    "venue": "Campo",
+    "emptyTitle": "Ainda ninguém está livre neste dia.",
+    "emptyDescription": "Experimenta outro dia ou alarga o intervalo de nível.",
+    "clearFilters": "Limpar filtros",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana seguinte",
+    "error": "Não foi possível carregar os horários. Verifica a ligação e tenta outra vez."
+  },
+  "ask": {
+    "title": "Pedir para jogar com {name}",
+    "message": "Mensagem",
+    "messagePlaceholder": "Por exemplo: quem reserva o campo, quem leva as bolas.",
+    "messageCounter": "{count}/300",
+    "send": "Enviar pedido",
+    "sent": "Pedido enviado",
+    "errors": {
+      "notOpen": "Este horário já não está livre. Escolhe outro.",
+      "inPast": "Este horário já começou. Escolhe outro.",
+      "ownSlot": "Não podes pedir para jogar num horário teu.",
+      "blocked": "Não podes enviar pedidos a este jogador.",
+      "exists": "Já tens um pedido à espera de resposta neste horário.",
+      "messageTooLong": "A mensagem pode ter no máximo 300 caracteres.",
+      "notFound": "Este horário já não existe. Escolhe outro.",
+      "generic": "Não foi possível enviar o pedido. Verifica a ligação e tenta outra vez."
+    }
   },
   "settings": {
     "profile": "Perfil",

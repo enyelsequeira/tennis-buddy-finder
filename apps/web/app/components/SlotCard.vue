@@ -7,6 +7,8 @@ const props = defineProps<{
   requested?: boolean;
   /** On a player's own profile the page already is the identity. */
   hideIdentity?: boolean;
+  linkProfile?: boolean;
+  hideAsk?: boolean;
 }>();
 
 const emit = defineEmits<{ ask: [slot: SlotSummary] }>();
@@ -29,8 +31,15 @@ const duration = computed(() => formatDuration(props.slot));
       <span class="text-sm text-muted">{{ duration }}</span>
     </div>
 
-    <PlayerIdentity v-if="!hideIdentity" :player="slot.player" :venue="slot.venue" />
-    <p v-else class="text-sm text-muted">{{ slot.venue ?? t("slot.anyVenue") }}</p>
+    <p v-if="hideIdentity" class="text-sm text-muted">{{ slot.venue ?? t("slot.anyVenue") }}</p>
+    <ULink
+      v-else-if="linkProfile"
+      :to="`/players/${slot.player.id}`"
+      class="block -m-1.5 p-1.5 rounded-lg hover:bg-accented/60"
+    >
+      <PlayerIdentity :player="slot.player" :venue="slot.venue" />
+    </ULink>
+    <PlayerIdentity v-else :player="slot.player" :venue="slot.venue" />
 
     <USeparator />
 
@@ -39,7 +48,7 @@ const duration = computed(() => formatDuration(props.slot));
         {{ slot.player.age }} · {{ t("player.playingYears", slot.player.yearsPlaying) }}
       </p>
       <UButton
-        v-if="slot.status === 'open' && !requested"
+        v-if="slot.status === 'open' && !requested && !hideAsk"
         :label="t('slot.askToPlay')"
         color="primary"
         @click="emit('ask', slot)"

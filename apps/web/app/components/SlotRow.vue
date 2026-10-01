@@ -17,7 +17,7 @@ const range = computed(() => formatRange(props));
 <template>
   <div class="flex items-center gap-2.5 min-h-11">
     <SlotStatusDot :status="status" />
-    <time class="font-display font-bold text-base text-highlighted">{{ range }}</time>
+    <time class="shrink-0 font-display font-bold text-base text-highlighted">{{ range }}</time>
     <span class="text-sm text-muted truncate">{{ venue ?? t("slot.anyVenue") }}</span>
     <div v-if="$slots.trailing" class="ms-auto shrink-0">
       <slot name="trailing" />

@@ -4,23 +4,14 @@ import type { Id } from "@tennis-buddy-finder/backend/convex/_generated/dataMode
 import type { ProfileInput } from "@tennis-buddy-finder/backend/convex/model/profileSchema";
 import type { SlotPlayer } from "~/types/slots";
 
-/**
- * The data-driven part of `/settings`. Mounted by the page only once
- * `useConvexAuthReady()` is true, so the reactive queries and mutations below
- * run over a Convex client that already holds a token.
- */
 const { t } = useI18n();
 const localePath = useLocalePath();
 const toast = useToast();
 const { ageFromBirthDate } = useLisbonTime();
 const { signOut, isPending: isSigningOut } = useSignOut();
 
-const { data: me, isPending, error } = useConvexQuery(api.users.me, {}, { server: false });
-const { data: blocked, isPending: blockedPending } = useConvexQuery(
-  api.blocks.listMine,
-  {},
-  { server: false },
-);
+const { data: me, isPending, error } = useAuthedQuery(api.users.me);
+const { data: blocked, isPending: blockedPending } = useAuthedQuery(api.blocks.listMine);
 
 const profile = computed(() => me.value?.profile ?? null);
 
@@ -116,7 +107,7 @@ async function onUnblock(userId: Id<"users">) {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
     <!-- Profile -->
     <UCard>
       <template #header>
@@ -190,95 +181,97 @@ async function onUnblock(userId: Id<"users">) {
       </template>
     </UCard>
 
-    <!-- Notifications -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.notifications") }}
-        </h2>
-      </template>
-      <USwitch
-        :model-value="emailNotifications"
-        :label="t('settings.emailNotifications')"
-        :description="t('settings.emailNotificationsHelp')"
-        :disabled="isPending || !!error"
-        :loading="isSavingNotifications"
-        @update:model-value="onNotificationsChange"
-      />
-    </UCard>
+    <div class="flex flex-col gap-4">
+      <!-- Notifications -->
+      <UCard>
+        <template #header>
+          <h2 class="font-display font-bold text-[15px] text-highlighted">
+            {{ t("settings.notifications") }}
+          </h2>
+        </template>
+        <USwitch
+          :model-value="emailNotifications"
+          :label="t('settings.emailNotifications')"
+          :description="t('settings.emailNotificationsHelp')"
+          :disabled="isPending || !!error"
+          :loading="isSavingNotifications"
+          @update:model-value="onNotificationsChange"
+        />
+      </UCard>
 
-    <!-- Language -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.language") }}
-        </h2>
-      </template>
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-muted">{{ t("settings.languageHelp") }}</p>
-        <LocaleSwitcher />
-      </div>
-    </UCard>
+      <!-- Language -->
+      <UCard>
+        <template #header>
+          <h2 class="font-display font-bold text-[15px] text-highlighted">
+            {{ t("settings.language") }}
+          </h2>
+        </template>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <p class="text-sm text-muted">{{ t("settings.languageHelp") }}</p>
+          <LocaleSwitcher />
+        </div>
+      </UCard>
 
-    <!-- Appearance -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.appearance") }}
-        </h2>
-      </template>
-      <UColorModeSelect color="neutral" class="w-full sm:w-56" />
-    </UCard>
+      <!-- Appearance -->
+      <UCard>
+        <template #header>
+          <h2 class="font-display font-bold text-[15px] text-highlighted">
+            {{ t("settings.appearance") }}
+          </h2>
+        </template>
+        <UColorModeSelect color="neutral" class="w-full sm:w-56" />
+      </UCard>
 
-    <!-- Blocked players -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.blocked") }}
-        </h2>
-      </template>
+      <!-- Blocked players -->
+      <UCard>
+        <template #header>
+          <h2 class="font-display font-bold text-[15px] text-highlighted">
+            {{ t("settings.blocked") }}
+          </h2>
+        </template>
 
-      <div v-if="blockedPending" class="space-y-2">
-        <USkeleton class="h-8 w-full" />
-        <USkeleton class="h-8 w-full" />
-      </div>
-      <p v-else-if="!blocked?.length" class="text-sm text-muted">
-        {{ t("settings.blockedEmpty") }}
-      </p>
-      <ul v-else class="divide-y divide-default">
-        <li
-          v-for="row in blocked"
-          :key="row.userId"
-          class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
-        >
-          <span class="text-sm font-medium text-highlighted truncate">{{ row.displayName }}</span>
-          <UButton
-            :label="t('settings.unblock')"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            :loading="unblocking === row.userId"
-            @click="onUnblock(row.userId)"
-          />
-        </li>
-      </ul>
-    </UCard>
+        <div v-if="blockedPending" class="space-y-2">
+          <USkeleton class="h-8 w-full" />
+          <USkeleton class="h-8 w-full" />
+        </div>
+        <p v-else-if="!blocked?.length" class="text-sm text-muted">
+          {{ t("settings.blockedEmpty") }}
+        </p>
+        <ul v-else class="divide-y divide-default">
+          <li
+            v-for="row in blocked"
+            :key="row.userId"
+            class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+          >
+            <span class="text-sm font-medium text-highlighted truncate">{{ row.displayName }}</span>
+            <UButton
+              :label="t('settings.unblock')"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :loading="unblocking === row.userId"
+              @click="onUnblock(row.userId)"
+            />
+          </li>
+        </ul>
+      </UCard>
 
-    <!-- Account -->
-    <UCard>
-      <template #header>
-        <h2 class="font-display font-bold text-[15px] text-highlighted">
-          {{ t("settings.account") }}
-        </h2>
-      </template>
-      <UButton
-        :label="t('nav.signOut')"
-        icon="i-lucide-log-out"
-        color="neutral"
-        variant="outline"
-        :loading="isSigningOut"
-        @click="signOut()"
-      />
-    </UCard>
+      <!-- Account -->
+      <UCard>
+        <template #header>
+          <h2 class="font-display font-bold text-[15px] text-highlighted">
+            {{ t("settings.account") }}
+          </h2>
+        </template>
+        <UButton
+          :label="t('nav.signOut')"
+          icon="i-lucide-log-out"
+          color="neutral"
+          variant="outline"
+          :loading="isSigningOut"
+          @click="signOut()"
+        />
+      </UCard>
+    </div>
   </div>
 </template>
