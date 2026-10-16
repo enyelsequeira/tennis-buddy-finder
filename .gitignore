@@ -60,3 +60,6 @@ temp
 
 # Local planning docs (specs and plans), not published
 docs/superpowers/
+
+# Pi agent local config (agents, settings, smoke-test reports)
+.pi/
