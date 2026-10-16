@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
 import { isBlockedEitherWay } from "./model/blocks";
-import { createUser, setup } from "./test.helpers";
+import { createUser, DAY, HOUR, NOW, setup } from "./test.helpers";
 
 describe("blocks", () => {
   it("block is idempotent and visible in listMine", async () => {
@@ -26,6 +26,29 @@ describe("blocks", () => {
     await expect(a.as.mutation(api.blocks.block, { userId: a.userId })).rejects.toThrow(
       "CANNOT_BLOCK_SELF",
     );
+  });
+
+  it("silently cancels pending requests between the pair in both directions", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    const b = await createUser(t);
+    const c = await createUser(t);
+    const startAt = NOW + DAY;
+    const [slotA, slotB] = await Promise.all(
+      [a, b].map((user) =>
+        user.as.mutation(api.availability.create, { startAt, endAt: startAt + HOUR }),
+      ),
+    );
+    const fromB = await b.as.mutation(api.matchRequests.send, { slotId: slotA! });
+    const fromA = await a.as.mutation(api.matchRequests.send, { slotId: slotB! });
+    const fromC = await c.as.mutation(api.matchRequests.send, { slotId: slotA! });
+    await a.as.mutation(api.blocks.block, { userId: b.userId });
+    const rows = await t.run(async (ctx) =>
+      Promise.all([fromB, fromA, fromC].map((id) => ctx.db.get("matchRequests", id))),
+    );
+    expect(rows.map((r) => r?.status)).toEqual(["cancelled", "cancelled", "pending"]);
+    const notes = await b.as.query(api.notifications.unread, {});
+    expect(notes.map((n) => n.type)).toEqual(["request_received"]);
   });
 
   it("unblock removes the block", async () => {

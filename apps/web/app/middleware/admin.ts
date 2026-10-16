@@ -1,6 +1,7 @@
 /**
- * Admin pages: `definePageMeta({ middleware: ["auth", "onboarded", "admin"] })`.
- * Anyone who is not an admin lands on the app home instead.
+ * Admin pages under `pages/(app)`: `definePageMeta({ middleware: "admin" })`.
+ * Runs after the group guard in `app.global.ts`; anyone who is not an admin
+ * lands on the app home instead.
  */
 export default defineNuxtRouteMiddleware(async () => {
   const localePath = useLocalePath();

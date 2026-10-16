@@ -1,10 +1,7 @@
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
-/** Unused until the availability task (slot windows and `copyLastWeek`). */
 export const DAY = 24 * HOUR;
-/** Unused until the availability task (slot bounds sit on a 30-minute grid). */
 export const SLOT_STEP_MS = 30 * MINUTE;
-/** Unused until the availability task (maximum slot length). */
 export const MAX_SLOT_MS = 6 * HOUR;
 export const MIN_AGE = 18;
 
@@ -37,7 +34,6 @@ export function ageOn(birthDate: string, at: number) {
   return age;
 }
 
-/** Unused until the availability task (validates slot bounds). */
 export function isOnSlotGrid(ts: number) {
   return ts % SLOT_STEP_MS === 0;
 }

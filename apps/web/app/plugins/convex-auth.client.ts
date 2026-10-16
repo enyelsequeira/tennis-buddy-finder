@@ -7,7 +7,7 @@ type FetchTokenOptions = { forceRefreshToken: boolean };
  *
  * Whenever the Better Auth session id changes, the Convex client is given a
  * token fetcher that exchanges the session cookie for a Convex JWT via
- * `authClient.convex.token()`; when the session disappears the Convex auth is
+ * `fetchConvexToken()`; when the session disappears the Convex auth is
  * cleared. This is the only place `setAuth` / `clearAuth` are called - pages,
  * composables and components never touch Convex auth directly.
  *
@@ -25,8 +25,7 @@ export default defineNuxtPlugin(() => {
 
   async function requestToken() {
     try {
-      const { data } = await authClient.convex.token({ fetchOptions: { throw: false } });
-      cachedToken = data?.token ?? null;
+      cachedToken = await fetchConvexToken();
     } catch {
       cachedToken = null;
     }

@@ -1,3 +1,4 @@
+import { CalendarDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import "dayjs/locale/en";
 import "dayjs/locale/pt";
@@ -31,6 +32,15 @@ export interface TimeRange {
   endAt: number;
 }
 
+/** The calendar fields of a `UCalendar` date value (`month` is 1 to 12). */
+export interface CalendarDay {
+  year: number;
+  month: number;
+  day: number;
+}
+
+export type TimeOfDay = "morning" | "afternoon" | "evening";
+
 export function useLisbonTime() {
   const { locale, t } = useI18n();
 
@@ -40,11 +50,20 @@ export function useLisbonTime() {
 
   const startOfDay = (ms: number) => lisbon(ms).startOf("day").valueOf();
 
-  const addDays = (ms: number, days: number) => lisbon(ms).add(days, "day").valueOf();
+  // dayjs keeps the old UTC offset when adding across a clock change, so the wall-clock
+  // result is re-read in Lisbon time instead of trusting the shifted instant.
+  const addDays = (ms: number, days: number) =>
+    dayjs.tz(lisbon(ms).add(days, "day").format("YYYY-MM-DDTHH:mm:ss.SSS"), LISBON_TZ).valueOf();
 
   /** The instant at which the Lisbon wall clock reads `hour:minute` on the given day. */
   const atTime = ({ dayMs, hour, minute = 0 }: AtTimeOptions) =>
     lisbon(dayMs).startOf("day").hour(hour).minute(minute).valueOf();
+
+  function timeOfDay(ms: number): TimeOfDay {
+    const hour = lisbon(ms).hour();
+    if (hour < 12) return "morning";
+    return hour < 18 ? "afternoon" : "evening";
+  }
 
   const formatTime = (ms: number) => lisbon(ms).format("HH:mm");
 
@@ -77,12 +96,42 @@ export function useLisbonTime() {
   const ageFromBirthDate = (birthDate: string) =>
     lisbon(now()).diff(dayjs.tz(birthDate, LISBON_TZ), "year");
 
+  const startOfMonth = (ms: number) => lisbon(ms).startOf("month").valueOf();
+
+  const dayBounds = (ms: number) => ({ from: startOfDay(ms), to: addDays(startOfDay(ms), 1) });
+
+  const monthBounds = (ms: number) => ({
+    from: startOfMonth(ms),
+    to: lisbon(ms).endOf("month").add(1, "millisecond").valueOf(),
+  });
+
+  const toCalendarDate = (ms: number) => {
+    const date = lisbon(ms);
+    return new CalendarDate(date.year(), date.month() + 1, date.date());
+  };
+
+  const startOfCalendarDay = ({ year, month, day }: CalendarDay) => {
+    const iso = [year, month, day].map((part) => String(part).padStart(2, "0")).join("-");
+    return dayjs.tz(iso, LISBON_TZ).valueOf();
+  };
+
+  /** Every 30-minute instant of a Lisbon day, from 00:00 to the next midnight inclusive. */
+  function halfHours(ms: number) {
+    const { from, to } = dayBounds(ms);
+    const steps: number[] = [];
+    for (let at = dayjs(from); !at.isAfter(to); at = at.add(30, "minute")) {
+      steps.push(at.valueOf());
+    }
+    return steps;
+  }
+
   return {
     now,
     ageFromBirthDate,
     startOfDay,
     addDays,
     atTime,
+    timeOfDay,
     formatTime,
     formatRange,
     formatDuration,
@@ -91,6 +140,12 @@ export function useLisbonTime() {
     formatLongDay,
     formatShortDay,
     formatYear,
+    startOfMonth,
+    dayBounds,
+    monthBounds,
+    toCalendarDate,
+    startOfCalendarDay,
+    halfHours,
   };
 }
 

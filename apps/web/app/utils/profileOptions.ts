@@ -4,6 +4,11 @@
  * labels live under `onboarding.*Options` in the locale files.
  */
 
+import { NTRP_VALUES } from "@tennis-buddy-finder/backend/convex/model/profileSchema";
+
+export const NTRP_MIN = Math.min(...NTRP_VALUES);
+export const NTRP_MAX = Math.max(...NTRP_VALUES);
+
 export const PROFILE_BIO_MAX = 500;
 export const PROFILE_LANGUAGES = ["pt", "en", "es", "fr", "de", "it"] as const;
 export const PROFILE_FORMATS = ["singles", "doubles", "both"] as const;

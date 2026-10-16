@@ -1,7 +1,9 @@
 /**
- * Protects a page: `definePageMeta({ middleware: "auth" })`.
- * Unauthenticated visitors go to the localized `/login` with the original
- * path in `?redirect=` so the login page can send them back.
+ * Protects a page outside `pages/(app)` that only needs a session
+ * (onboarding): `definePageMeta({ middleware: "auth" })`. Pages in the group
+ * are covered by `app.global.ts`. Unauthenticated visitors go to the localized
+ * `/login` with the original path in `?redirect=` so the login page can send
+ * them back.
  */
 export default defineNuxtRouteMiddleware(async (to) => {
   const localePath = useLocalePath();

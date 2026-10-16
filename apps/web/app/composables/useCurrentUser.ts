@@ -28,7 +28,7 @@ async function loadCurrentUser(convexUrl: string) {
  * without waiting for the WebSocket client to receive its token. Fetched once
  * per request on the server, re-fetched on every client-side navigation so
  * route guards never act on a stale profile. Live data on pages should use
- * `useConvexQuery(api.users.me, {}, { server: false })` instead.
+ * `useAuthedQuery(api.users.me)` instead.
  */
 export async function useCurrentUser() {
   const convexUrl = useRuntimeConfig().public.convex.url;

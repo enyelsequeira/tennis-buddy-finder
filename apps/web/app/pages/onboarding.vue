@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
 import type { ProfileInput } from "@tennis-buddy-finder/backend/convex/model/profileSchema";
-import { ConvexError } from "convex/values";
 
 definePageMeta({ layout: "auth", middleware: "auth", authWide: true });
 
@@ -22,10 +21,6 @@ const displayName = computed(() => me.value?.user.name ?? "");
 
 const { mutate: createProfile, isPending } = useConvexMutation(api.profiles.create);
 
-function errorCode(error: unknown) {
-  return error instanceof ConvexError && typeof error.data === "string" ? error.data : "generic";
-}
-
 async function onSubmit(input: ProfileInput) {
   try {
     await createProfile(input);
@@ -33,7 +28,7 @@ async function onSubmit(input: ProfileInput) {
     toast.add({ title: t("onboarding.success"), icon: "i-lucide-check" });
     await navigateTo(localePath("/find"));
   } catch (error) {
-    if (errorCode(error) === "PROFILE_EXISTS") {
+    if (convexErrorCode(error) === "PROFILE_EXISTS") {
       toast.add({ title: t("onboarding.errors.profileExists"), icon: "i-lucide-info" });
       await navigateTo(localePath("/find"));
       return;

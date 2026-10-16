@@ -1,18 +1,24 @@
 <script setup lang="ts">
-/**
- * Mobile app shell navigation (below `md`): a fixed 64px bottom bar with the
- * five sections from the visual spec. Pages that use another layout (auth,
- * onboarding) never render it.
- */
 const { t } = useI18n();
 const route = useRoute();
 const localePath = useLocalePath();
+const { hasUnreadRequests, hasUnreadMessages } = useUnreadNotifications();
 
 const tabs = computed(() => [
   { label: t("nav.find"), to: "/find", icon: "i-lucide-search" },
   { label: t("nav.calendar"), to: "/calendar", icon: "i-lucide-calendar-days" },
-  { label: t("nav.requests"), to: "/requests", icon: "i-lucide-inbox" },
-  { label: t("nav.messages"), to: "/messages", icon: "i-lucide-message-circle" },
+  {
+    label: t("nav.requests"),
+    to: "/requests",
+    icon: "i-lucide-inbox",
+    unread: hasUnreadRequests.value,
+  },
+  {
+    label: t("nav.messages"),
+    to: "/messages",
+    icon: "i-lucide-message-circle",
+    unread: hasUnreadMessages.value,
+  },
   { label: t("nav.me"), to: "/settings", icon: "i-lucide-user-round" },
 ]);
 
@@ -33,8 +39,11 @@ const isActive = (path: string) => route.path.startsWith(localePath(path));
       :class="isActive(tab.to) ? 'text-primary' : 'text-dimmed'"
       :aria-current="isActive(tab.to) ? 'page' : undefined"
     >
-      <UIcon :name="tab.icon" class="size-5" />
+      <UChip color="warning" :show="!!tab.unread">
+        <UIcon :name="tab.icon" class="size-5" />
+      </UChip>
       {{ tab.label }}
+      <span v-if="tab.unread" class="sr-only">{{ t("notifications.unread") }}</span>
     </ULink>
   </nav>
 </template>

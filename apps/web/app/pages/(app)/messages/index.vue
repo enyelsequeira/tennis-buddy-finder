@@ -1,6 +1,4 @@
 <script setup lang="ts">
-definePageMeta({ middleware: ["auth", "onboarded"] });
-
 const { t } = useI18n();
 
 useSeoMeta({ title: () => t("pages.messages.title") });

@@ -6,7 +6,8 @@ import { authClient } from "~/utils/auth-client";
  * Convex JWT for the current Better Auth session, usable in both render
  * targets. On the server it exchanges the request cookie directly against
  * the Convex site URL; in the browser it goes through `authClient`.
- * Returns null when signed out.
+ * Returns null when signed out. Shared by `useCurrentUser` (guards, SSR) and
+ * `plugins/convex-auth.client.ts` (WebSocket client).
  */
 export async function fetchConvexToken() {
   if (import.meta.server) {

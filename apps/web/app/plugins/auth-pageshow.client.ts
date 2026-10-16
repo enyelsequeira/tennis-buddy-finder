@@ -18,7 +18,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     await nuxtApp.runWithContext(async () => {
       const route = useRoute();
       const guards = guardsOf(route.meta.middleware);
-      const needsAuth = guards.includes("auth");
+      const needsAuth = guards.includes("auth") || !!route.meta.groups?.includes("app");
       const guestOnly = guards.includes("guest");
       if (!needsAuth && !guestOnly) return;
 

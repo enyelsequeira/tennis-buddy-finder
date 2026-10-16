@@ -23,7 +23,8 @@
     "me": "Me",
     "settings": "Settings",
     "signOut": "Sign out",
-    "account": "Account"
+    "account": "Account",
+    "addAvailability": "Add availability"
   },
   "playground": {
     "title": "Translation demo",
@@ -50,7 +51,8 @@
   "slot": {
     "status": {
       "open": "Open",
-      "matched": "Matched"
+      "matched": "Matched",
+      "closed": "No longer available"
     },
     "anyVenue": "Any venue",
     "askToPlay": "Ask to play",
@@ -74,6 +76,33 @@
       "accepted": "Accepted",
       "declined": "Declined",
       "cancelled": "Cancelled"
+    },
+    "tabs": {
+      "received": "Received",
+      "receivedCount": "Received · {count}",
+      "sent": "Sent"
+    },
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancel": "Cancel request",
+    "openChat": "Open chat",
+    "toast": {
+      "accept": "Accepted, chat is open",
+      "decline": "Declined",
+      "cancel": "Request cancelled"
+    },
+    "empty": {
+      "receivedTitle": "No requests yet.",
+      "receivedDescription": "Add availability and players near you can ask to play.",
+      "sentTitle": "You haven't sent any requests yet."
+    },
+    "loadError": "Couldn't load the requests. Check your connection and try again.",
+    "errors": {
+      "notPending": "This request has already been answered or cancelled.",
+      "slotNotOpen": "This slot is no longer open.",
+      "forbidden": "You can't change this request.",
+      "notFound": "This request no longer exists.",
+      "generic": "Couldn't complete the action. Check your connection and try again."
     }
   },
   "hero": {
@@ -310,6 +339,19 @@
     "comingSoonTitle": "Coming soon",
     "comingSoonDescription": "This part is still being built."
   },
+  "notifications": {
+    "title": "Notifications",
+    "titleUnread": "Unread notifications",
+    "unread": "unread",
+    "empty": "You have no new notifications.",
+    "loadError": "Couldn't load notifications. Check your connection and try again.",
+    "types": {
+      "request_received": "You have a new request to play.",
+      "request_accepted": "Your request to play was accepted.",
+      "request_declined": "Your request to play was declined.",
+      "new_message": "You have a new message."
+    }
+  },
   "pages": {
     "find": {
       "title": "Find a game"
@@ -325,6 +367,40 @@
     },
     "settings": {
       "title": "Settings"
+    }
+  },
+  "calendar": {
+    "subtitle": "When you can play",
+    "copyLastWeek": "Copy last week",
+    "copied": "No slots to copy | Copied 1 slot | Copied {n} slots",
+    "empty": "You have no slots this month. Add when you can play and players can find you.",
+    "loadError": "Couldn't load your slots. Check your connection and try again.",
+    "dayEmpty": "No slots on this day yet.",
+    "addHeading": "Add a slot",
+    "start": "Start",
+    "end": "End",
+    "note": "Note",
+    "addSlot": "Add slot",
+    "slotAdded": "Slot added",
+    "removeSlot": "Remove slot",
+    "cancel": "Cancel",
+    "cancelTitle": "Cancel this match?",
+    "cancelDescription": "The other player is notified and the slot leaves your calendar.",
+    "cancelConfirm": "Cancel match",
+    "cancelKeep": "Keep match",
+    "matchCancelled": "Match cancelled",
+    "errors": {
+      "startRequired": "Pick a start time.",
+      "endRequired": "Pick an end time.",
+      "endAfterStart": "The end must be after the start.",
+      "tooLong": "A slot can be at most 6 hours long.",
+      "noteTooLong": "The note can be at most 200 characters.",
+      "overlap": "You already have a slot that overlaps this one. Pick other times.",
+      "inPast": "That time has already passed. Pick a later time.",
+      "notOnGrid": "Times must be on the hour or half hour.",
+      "notOpen": "This slot is no longer open and can't be removed.",
+      "invalidVenue": "This venue is no longer available. Pick another one.",
+      "generic": "Couldn't complete the action. Check your connection and try again."
     }
   },
   "playerPage": {
@@ -348,7 +424,45 @@
     "blockError": "Couldn't block. Check your connection and try again.",
     "cancel": "Cancel",
     "thisIsYou": "This is you. This is how other players see you.",
-    "editProfile": "Edit profile"
+    "editProfile": "Edit profile",
+    "noSlots": "{name} has no open slots right now."
+  },
+  "find": {
+    "filters": "Filters",
+    "timeOfDay": "Time of day",
+    "times": {
+      "any": "Any",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening"
+    },
+    "ntrpRange": "NTRP {min}–{max}",
+    "format": "Format",
+    "venue": "Venue",
+    "emptyTitle": "No one is free on this day yet.",
+    "emptyDescription": "Try another day or widen the level range.",
+    "clearFilters": "Clear filters",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "error": "Couldn't load the slots. Check your connection and try again."
+  },
+  "ask": {
+    "title": "Ask {name} to play",
+    "message": "Message",
+    "messagePlaceholder": "For example: who books the court, who brings the balls.",
+    "messageCounter": "{count}/300",
+    "send": "Send request",
+    "sent": "Request sent",
+    "errors": {
+      "notOpen": "This slot is no longer open. Pick another one.",
+      "inPast": "This slot has already started. Pick another one.",
+      "ownSlot": "You can't ask to play on your own slot.",
+      "blocked": "You can't send requests to this player.",
+      "exists": "You already have a request waiting on this slot.",
+      "messageTooLong": "The message can be at most 300 characters.",
+      "notFound": "This slot no longer exists. Pick another one.",
+      "generic": "Couldn't send the request. Check your connection and try again."
+    }
   },
   "settings": {
     "profile": "Profile",
