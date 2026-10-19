@@ -15,10 +15,13 @@ export async function isBlockedEitherWay(ctx: Ctx, a: Id<"users">, b: Id<"users"
   return ba !== null;
 }
 
-/** A banned (or deleted) user is invisible to every other player. */
+/**
+ * A banned user is invisible to every other player. A missing `users` row is
+ * not a ban: deleted players keep their "deleted player" handling.
+ */
 export async function isBanned(ctx: Ctx, userId: Id<"users">) {
   const user = await ctx.db.get("users", userId);
-  return !user || user.bannedAt !== undefined;
+  return user?.bannedAt !== undefined;
 }
 
 /**

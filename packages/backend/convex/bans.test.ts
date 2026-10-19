@@ -119,5 +119,42 @@ describe("banned users are hidden from other players", () => {
     await expect(
       me.as.mutation(api.messages.send, { conversationId, body: "hello?" }),
     ).rejects.toThrow("NOT_FOUND");
+    await expect(me.as.query(api.messages.list, { conversationId, limit: 50 })).rejects.toThrow(
+      "NOT_FOUND",
+    );
+    await expect(me.as.mutation(api.conversations.markRead, { conversationId })).rejects.toThrow(
+      "NOT_FOUND",
+    );
+  });
+
+  it("a banned player drops out of my block list and cannot be newly blocked", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const blockedThenBanned = await createUser(t);
+    const banned = await createUser(t);
+    await me.as.mutation(api.blocks.block, { userId: blockedThenBanned.userId });
+
+    await ban(t, blockedThenBanned.userId);
+    await ban(t, banned.userId);
+
+    expect(await me.as.query(api.blocks.listMine, {})).toEqual([]);
+    await expect(me.as.mutation(api.blocks.block, { userId: banned.userId })).rejects.toThrow(
+      "NOT_FOUND",
+    );
+  });
+
+  it("a deleted users row is not treated as a ban: the thread still opens", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const gone = await createUser(t);
+    const slotId = await createSlot(me);
+    const requestId = await gone.as.mutation(api.matchRequests.send, { slotId });
+    const conversationId = await me.as.mutation(api.matchRequests.accept, { requestId });
+
+    await t.run(async (ctx) => ctx.db.delete("users", gone.userId));
+
+    expect(await me.as.query(api.conversations.list, {})).toHaveLength(1);
+    const thread = await me.as.query(api.conversations.get, { conversationId });
+    expect(thread.otherUserId).toBe(gone.userId);
   });
 });
