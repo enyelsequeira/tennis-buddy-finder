@@ -28,14 +28,15 @@ describe("banned users are hidden from other players", () => {
     const other = await createUser(t);
     await createSlot(banned);
     await createSlot(other);
+    const search = () =>
+      me.as.query(api.availability.search, { ...week, ...anyLevel, paginationOpts: page });
+    const before = (await search()).page.map((row) => row.player.userId);
+    expect(before).toHaveLength(2);
+    expect(before).toEqual(expect.arrayContaining([banned.userId, other.userId]));
 
     await ban(t, banned.userId);
 
-    const result = await me.as.query(api.availability.search, {
-      ...week,
-      ...anyLevel,
-      paginationOpts: page,
-    });
+    const result = await search();
     expect(result.page.map((row) => row.player.userId)).toEqual([other.userId]);
   });
 
@@ -133,6 +134,7 @@ describe("banned users are hidden from other players", () => {
     const blockedThenBanned = await createUser(t);
     const banned = await createUser(t);
     await me.as.mutation(api.blocks.block, { userId: blockedThenBanned.userId });
+    expect(await me.as.query(api.blocks.listMine, {})).toHaveLength(1);
 
     await ban(t, blockedThenBanned.userId);
     await ban(t, banned.userId);
@@ -141,20 +143,34 @@ describe("banned users are hidden from other players", () => {
     await expect(me.as.mutation(api.blocks.block, { userId: banned.userId })).rejects.toThrow(
       "NOT_FOUND",
     );
+
+    await t.run(async (ctx) =>
+      ctx.db.patch("users", blockedThenBanned.userId, { bannedAt: undefined }),
+    );
+
+    const afterLift = await me.as.query(api.blocks.listMine, {});
+    expect(afterLift).toHaveLength(1);
+    expect(afterLift[0]?.userId).toBe(blockedThenBanned.userId);
   });
 
   it("a deleted users row is not treated as a ban: the thread still opens", async () => {
     const t = setup();
     const me = await createUser(t);
     const gone = await createUser(t);
+    const goneBlocked = await createUser(t);
     const slotId = await createSlot(me);
     const requestId = await gone.as.mutation(api.matchRequests.send, { slotId });
     const conversationId = await me.as.mutation(api.matchRequests.accept, { requestId });
+    await me.as.mutation(api.blocks.block, { userId: goneBlocked.userId });
 
     await t.run(async (ctx) => ctx.db.delete("users", gone.userId));
+    await t.run(async (ctx) => ctx.db.delete("users", goneBlocked.userId));
 
     expect(await me.as.query(api.conversations.list, {})).toHaveLength(1);
     const thread = await me.as.query(api.conversations.get, { conversationId });
     expect(thread.otherUserId).toBe(gone.userId);
+    expect((await me.as.query(api.blocks.listMine, {})).map((row) => row.userId)).toContain(
+      goneBlocked.userId,
+    );
   });
 });
