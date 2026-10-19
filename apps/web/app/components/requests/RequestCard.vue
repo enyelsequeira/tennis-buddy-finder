@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
+import type { Id } from "@tennis-buddy-finder/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 
 const props = defineProps<{
@@ -35,15 +36,20 @@ type Action = keyof typeof mutations;
 
 const busy = ref<Action | null>(null);
 
+const chatLink = (conversationId?: Id<"conversations">) =>
+  conversationId ? `/messages/${conversationId}` : "/messages";
+
 async function respond(action: Action) {
   busy.value = action;
   try {
-    await mutations[action].mutate({ requestId: props.view.request._id });
+    const result = await mutations[action].mutate({ requestId: props.view.request._id });
     toast.add({
       title: t(`request.toast.${action}`),
       icon: "i-lucide-check",
       actions:
-        action === "accept" ? [{ label: t("request.openChat"), to: "/messages" }] : undefined,
+        action === "accept"
+          ? [{ label: t("request.openChat"), to: chatLink(result ?? undefined) }]
+          : undefined,
     });
   } catch (error) {
     toast.add({
@@ -120,7 +126,7 @@ async function respond(action: Action) {
         :label="t('request.openChat')"
         icon="i-lucide-message-circle"
         variant="link"
-        to="/messages"
+        :to="chatLink(view.request.conversationId)"
       />
     </div>
   </article>

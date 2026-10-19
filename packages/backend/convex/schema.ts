@@ -84,7 +84,8 @@ export default defineSchema({
     .index("by_slotId_and_fromUserId", ["slotId", "fromUserId"])
     .index("by_slotId_and_status", ["slotId", "status"])
     .index("by_toUserId_and_status", ["toUserId", "status"])
-    .index("by_fromUserId_and_status", ["fromUserId", "status"]),
+    .index("by_fromUserId_and_status", ["fromUserId", "status"])
+    .index("by_conversationId_and_status", ["conversationId", "status"]),
 
   /** One direct-message thread per pair of users. `userAId` < `userBId` for a stable lookup key. */
   conversations: defineTable({

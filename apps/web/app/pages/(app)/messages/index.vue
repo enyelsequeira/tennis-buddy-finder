@@ -1,16 +1,12 @@
 <script setup lang="ts">
 const { t } = useI18n();
-
-useSeoMeta({ title: () => t("pages.messages.title") });
 </script>
 
 <template>
-  <div class="space-y-4">
-    <h1
-      class="font-display font-bold tracking-[-0.015em] text-[22px] md:text-[26px] text-highlighted"
-    >
-      {{ t("pages.messages.title") }}
-    </h1>
-    <ComingSoon />
-  </div>
+  <UEmpty
+    icon="i-lucide-messages-square"
+    :title="t('chat.pickTitle')"
+    :description="t('chat.pickDescription')"
+    :ui="{ root: 'flex-1 py-16' }"
+  />
 </template>
