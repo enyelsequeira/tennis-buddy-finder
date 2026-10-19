@@ -2,7 +2,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
 import type { Ctx } from "./auth";
-import { isBlockedEitherWay } from "./blocks";
+import { isHiddenFrom } from "./blocks";
 import { fail } from "./errors";
 
 type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
@@ -48,7 +48,8 @@ export async function getMembership(ctx: Ctx, { conversationId, userId }: Member
 
 /**
  * Loads a conversation the user belongs to. Conversations with a block in
- * either direction look like they do not exist, as on the player profile.
+ * either direction, or with a banned member, look like they do not exist,
+ * as on the player profile.
  */
 export async function getMemberConversation(ctx: Ctx, options: MembershipOptions) {
   const conversation = await ctx.db.get("conversations", options.conversationId);
@@ -56,7 +57,7 @@ export async function getMemberConversation(ctx: Ctx, options: MembershipOptions
   const membership = await getMembership(ctx, options);
   if (!membership) fail("NOT_FOUND");
   const otherUserId = otherMemberId(conversation, options.userId);
-  if (await isBlockedEitherWay(ctx, options.userId, otherUserId)) fail("NOT_FOUND");
+  if (await isHiddenFrom(ctx, options.userId, otherUserId)) fail("NOT_FOUND");
   return { conversation, membership, otherUserId };
 }
 

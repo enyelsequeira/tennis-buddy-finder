@@ -5,7 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { slotDoc } from "./availability";
 import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
-import { isBlockedEitherWay } from "./model/blocks";
+import { isBanned, isBlockedEitherWay, isHiddenFrom } from "./model/blocks";
 import { getOrCreateConversation } from "./model/conversations";
 import { fail } from "./model/errors";
 import { createNotification } from "./model/notifications";
@@ -45,8 +45,9 @@ type ViewOptions = {
 
 async function toViews(ctx: Ctx, { requests, player }: ViewOptions) {
   const views = [];
+  const viewer = player === "fromUserId" ? "toUserId" : "fromUserId";
   for (const request of requests) {
-    if (await isBlockedEitherWay(ctx, request.fromUserId, request.toUserId)) continue;
+    if (await isHiddenFrom(ctx, request[viewer], request[player])) continue;
     const slot = await ctx.db.get("availabilitySlots", request.slotId);
     const profile = await getProfileForUser(ctx, request[player]);
     if (slot && profile) views.push({ request, slot, player: toPlayerCard(profile) });
@@ -61,7 +62,8 @@ export const send = mutation({
     const { user } = await getCurrentProfile(ctx);
     if (args.message !== undefined && args.message.length > MAX_MESSAGE) fail("INVALID_MESSAGE");
     const slot = await ctx.db.get("availabilitySlots", args.slotId);
-    if (!slot) fail("NOT_FOUND");
+    // A banned player's slots look like they do not exist.
+    if (!slot || (await isBanned(ctx, slot.userId))) fail("NOT_FOUND");
     if (slot.userId === user._id) fail("CANNOT_REQUEST_OWN_SLOT");
     if (slot.status !== "open") fail("SLOT_NOT_OPEN");
     if (slot.startAt <= Date.now()) fail("SLOT_IN_PAST");
@@ -95,6 +97,7 @@ export const accept = mutation({
       requestId: args.requestId,
       role: "toUserId",
     });
+    if (await isBanned(ctx, request.fromUserId)) fail("NOT_FOUND");
     const slot = await ctx.db.get("availabilitySlots", request.slotId);
     if (!slot || slot.status !== "open") fail("SLOT_NOT_OPEN");
     if (await isBlockedEitherWay(ctx, user._id, request.fromUserId)) fail("BLOCKED");

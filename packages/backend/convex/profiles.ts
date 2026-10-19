@@ -4,7 +4,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getCurrentProfile, getCurrentUser, getProfileForUser } from "./model/auth";
-import { isBlockedEitherWay } from "./model/blocks";
+import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
 import { ageOn, MIN_AGE, parseIsoDate } from "./model/time";
 import { formatsValidator, genderValidator, handednessValidator } from "./model/validators";
@@ -109,7 +109,7 @@ export const getByUserId = query({
   returns: profileWithAge,
   handler: async (ctx, args) => {
     const { user } = await getCurrentProfile(ctx);
-    if (await isBlockedEitherWay(ctx, user._id, args.userId)) fail("NOT_FOUND");
+    if (await isHiddenFrom(ctx, user._id, args.userId)) fail("NOT_FOUND");
     const profile = await getProfileForUser(ctx, args.userId);
     if (!profile) fail("NOT_FOUND");
     return withAge(profile);
