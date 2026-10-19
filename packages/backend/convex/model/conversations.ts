@@ -7,6 +7,9 @@ import { fail } from "./errors";
 
 type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
 
+/** Unread notifications scanned when looking for a conversation's message notification. */
+const MAX_NOTIFICATIONS_SCANNED = 200;
+
 export async function getOrCreateConversation(ctx: MutationCtx, pair: Pair) {
   const [userAId, userBId] =
     pair.userId < pair.otherUserId
@@ -75,4 +78,32 @@ export async function unreadMessages(ctx: Ctx, options: UnreadOptions) {
     )
     .take(options.limit);
   return rows.filter((row) => row.senderId !== options.userId);
+}
+
+/** Unread `new_message` notifications of `userId` for one conversation. */
+export async function unreadMessageNotifications(
+  ctx: Ctx,
+  options: { userId: Id<"users">; conversationId: Id<"conversations"> },
+) {
+  const rows = await ctx.db
+    .query("notifications")
+    .withIndex("by_userId_and_readAt", (q) =>
+      q.eq("userId", options.userId).eq("readAt", undefined),
+    )
+    .order("desc")
+    .take(MAX_NOTIFICATIONS_SCANNED);
+  return rows.filter(
+    (row) => row.type === "new_message" && row.conversationId === options.conversationId,
+  );
+}
+
+/** Marks `userId`'s message notifications for this conversation as read. */
+export async function clearMessageNotifications(
+  ctx: MutationCtx,
+  options: { userId: Id<"users">; conversationId: Id<"conversations"> },
+) {
+  const now = Date.now();
+  for (const row of await unreadMessageNotifications(ctx, options)) {
+    await ctx.db.patch("notifications", row._id, { readAt: now });
+  }
 }

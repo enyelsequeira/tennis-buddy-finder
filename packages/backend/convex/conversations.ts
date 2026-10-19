@@ -5,14 +5,18 @@ import { mutation, query } from "./_generated/server";
 import { slotDoc } from "./availability";
 import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
 import { isBlockedEitherWay } from "./model/blocks";
-import { getMemberConversation, otherMemberId, unreadMessages } from "./model/conversations";
+import {
+  clearMessageNotifications,
+  getMemberConversation,
+  otherMemberId,
+  unreadMessages,
+} from "./model/conversations";
 import { playerCard, toPlayerCard } from "./model/playerCard";
 
 const MAX_CONVERSATIONS = 100;
-/** Unread counts stop here; the UI shows "99+". */
-const MAX_UNREAD_COUNT = 100;
-const MAX_ACCEPTED = 100;
-const MAX_NOTIFICATIONS_MARKED = 200;
+/** Unread counts stop here; the UI shows "9+". */
+const MAX_UNREAD_COUNT = 10;
+const MAX_ACCEPTED = 20;
 const PREVIEW_LENGTH = 140;
 
 const conversationSummary = v.object({
@@ -27,27 +31,18 @@ const conversationSummary = v.object({
   unreadCount: v.number(),
 });
 
-/** The newest slot this pair was matched on, pinned at the top of the thread. */
-async function latestMatchedSlot(
-  ctx: Ctx,
-  pair: { userId: Id<"users">; otherUserId: Id<"users"> },
-) {
+/** The newest slot this conversation was matched on, pinned at the top of the thread. */
+async function latestMatchedSlot(ctx: Ctx, conversationId: Id<"conversations">) {
+  const accepted = await ctx.db
+    .query("matchRequests")
+    .withIndex("by_conversationId_and_status", (q) =>
+      q.eq("conversationId", conversationId).eq("status", "accepted"),
+    )
+    .order("desc")
+    .take(MAX_ACCEPTED);
   let latest: Doc<"matchRequests"> | null = null;
-  for (const [from, to] of [
-    [pair.userId, pair.otherUserId],
-    [pair.otherUserId, pair.userId],
-  ] as const) {
-    const accepted = await ctx.db
-      .query("matchRequests")
-      .withIndex("by_fromUserId_and_status", (q) =>
-        q.eq("fromUserId", from).eq("status", "accepted"),
-      )
-      .order("desc")
-      .take(MAX_ACCEPTED);
-    for (const request of accepted) {
-      if (request.toUserId !== to) continue;
-      if (!latest || (request.respondedAt ?? 0) > (latest.respondedAt ?? 0)) latest = request;
-    }
+  for (const request of accepted) {
+    if (!latest || (request.respondedAt ?? 0) > (latest.respondedAt ?? 0)) latest = request;
   }
   return latest ? ctx.db.get("availabilitySlots", latest.slotId) : null;
 }
@@ -60,6 +55,7 @@ export const list = query({
     const memberships = await ctx.db
       .query("conversationMembers")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .order("desc")
       .take(MAX_CONVERSATIONS);
 
     const rows = [];
@@ -120,7 +116,7 @@ export const get = query({
       conversationId: conversation._id,
       otherUserId,
       player: profile ? toPlayerCard(profile) : null,
-      slot: await latestMatchedSlot(ctx, { userId: user._id, otherUserId }),
+      slot: await latestMatchedSlot(ctx, conversation._id),
     };
   },
 });
@@ -134,27 +130,21 @@ export const markRead = mutation({
       conversationId: args.conversationId,
       userId: user._id,
     });
-    const now = Date.now();
     const newest = await ctx.db
       .query("messages")
       .withIndex("by_conversationId", (q) => q.eq("conversationId", args.conversationId))
       .order("desc")
       .first();
-    // Never behind the newest message, so it cannot stay unread by a clock tick.
-    const lastReadAt = Math.max(now, newest?._creationTime ?? 0);
-    if ((membership.lastReadAt ?? 0) < lastReadAt) {
-      await ctx.db.patch("conversationMembers", membership._id, { lastReadAt });
+    // Only write when something is unread, so an open thread does not churn its own queries.
+    if (newest && newest._creationTime > (membership.lastReadAt ?? 0)) {
+      await ctx.db.patch("conversationMembers", membership._id, {
+        lastReadAt: newest._creationTime,
+      });
     }
-    const unread = await ctx.db
-      .query("notifications")
-      .withIndex("by_userId_and_readAt", (q) => q.eq("userId", user._id).eq("readAt", undefined))
-      .order("desc")
-      .take(MAX_NOTIFICATIONS_MARKED);
-    for (const row of unread) {
-      if (row.type === "new_message" && row.conversationId === args.conversationId) {
-        await ctx.db.patch("notifications", row._id, { readAt: now });
-      }
-    }
+    await clearMessageNotifications(ctx, {
+      userId: user._id,
+      conversationId: args.conversationId,
+    });
     return null;
   },
 });

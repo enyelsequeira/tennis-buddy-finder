@@ -23,10 +23,14 @@ const tabs = computed(() => [
 ]);
 
 const isActive = (path: string) => route.path.startsWith(localePath(path));
+
+/** A conversation is full screen on mobile, so the tab bar steps aside entirely. */
+const inThread = computed(() => isActive("/messages") && Boolean(route.params.id));
 </script>
 
 <template>
   <nav
+    v-if="!inThread"
     class="md:hidden fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-5 border-t border-default bg-elevated pb-[env(safe-area-inset-bottom,0px)]"
     :aria-label="t('nav.main')"
   >

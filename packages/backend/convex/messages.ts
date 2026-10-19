@@ -2,7 +2,12 @@ import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 import { getCurrentProfile } from "./model/auth";
-import { getMemberConversation, getMembership, unreadMessages } from "./model/conversations";
+import {
+  clearMessageNotifications,
+  getMemberConversation,
+  getMembership,
+  unreadMessageNotifications,
+} from "./model/conversations";
 import { fail } from "./model/errors";
 import { MAX_MESSAGE_LENGTH } from "./model/messageSchema";
 import { createNotification } from "./model/notifications";
@@ -32,7 +37,8 @@ export const list = query({
       .withIndex("by_conversationId", (q) => q.eq("conversationId", args.conversationId))
       .order("desc")
       .take(limit + 1);
-    const hasMore = rows.length > limit;
+    // The window stops growing at MAX_LIMIT, so "load earlier" stops there too.
+    const hasMore = rows.length > limit && limit < MAX_LIMIT;
     const messages = rows
       .slice(0, limit)
       .reverse()
@@ -58,19 +64,18 @@ export const send = mutation({
       userId: user._id,
     });
 
-    // One notification (and later one email) per conversation until the recipient reads it.
+    // One notification (and later one email) per conversation until the recipient
+    // reads it, either by opening the thread or by reading the notification.
     const otherMembership = await getMembership(ctx, {
       conversationId: conversation._id,
       userId: otherUserId,
     });
-    const recipientHadUnread =
+    const recipientHasNotification =
       otherMembership !== null &&
       (
-        await unreadMessages(ctx, {
-          conversationId: conversation._id,
+        await unreadMessageNotifications(ctx, {
           userId: otherUserId,
-          since: otherMembership.lastReadAt,
-          limit: 1,
+          conversationId: conversation._id,
         })
       ).length > 0;
 
@@ -86,7 +91,10 @@ export const send = mutation({
       lastReadAt: Math.max(sentAt, membership.lastReadAt ?? 0),
     });
 
-    if (otherMembership && !recipientHadUnread) {
+    // Replying means the sender has seen the thread.
+    await clearMessageNotifications(ctx, { userId: user._id, conversationId: conversation._id });
+
+    if (otherMembership && !recipientHasNotification) {
       await createNotification(ctx, {
         userId: otherUserId,
         type: "new_message",

@@ -135,6 +135,60 @@ describe("messages.send / messages.list", () => {
     expect(notes).toHaveLength(1);
     expect(notes[0]?.conversationId).toBe(conversationId);
   });
+
+  it("notifies again after the bell is read, even if the thread is not", async () => {
+    const t = setup();
+    const { owner, asker, conversationId } = await pair(t);
+    tick();
+    await asker.as.mutation(api.messages.send, { conversationId, body: "1" });
+    await owner.as.mutation(api.notifications.markAllRead, {});
+    expect(await unreadMessageNotes(owner)).toHaveLength(0);
+
+    tick();
+    await asker.as.mutation(api.messages.send, { conversationId, body: "2" });
+    expect(await unreadMessageNotes(owner)).toHaveLength(1);
+  });
+
+  it("replying clears the sender's own message notification", async () => {
+    const t = setup();
+    const { owner, asker, conversationId } = await pair(t);
+    tick();
+    await asker.as.mutation(api.messages.send, { conversationId, body: "hi" });
+    expect(await unreadMessageNotes(owner)).toHaveLength(1);
+
+    tick();
+    await owner.as.mutation(api.messages.send, { conversationId, body: "hey" });
+    expect(await unreadMessageNotes(owner)).toHaveLength(0);
+
+    tick();
+    await asker.as.mutation(api.messages.send, { conversationId, body: "again" });
+    expect(await unreadMessageNotes(owner)).toHaveLength(1);
+  });
+
+  it("markRead does not write when nothing is unread", async () => {
+    const t = setup();
+    const { owner, asker, conversationId } = await pair(t);
+    tick();
+    await asker.as.mutation(api.messages.send, { conversationId, body: "1" });
+    tick();
+    await owner.as.mutation(api.conversations.markRead, { conversationId });
+    const readAt = async () =>
+      t.run(
+        async (ctx) =>
+          (
+            await ctx.db
+              .query("conversationMembers")
+              .withIndex("by_conversationId_and_userId", (q) =>
+                q.eq("conversationId", conversationId).eq("userId", owner.userId),
+              )
+              .unique()
+          )?.lastReadAt,
+      );
+    const first = await readAt();
+    tick();
+    await owner.as.mutation(api.conversations.markRead, { conversationId });
+    expect(await readAt()).toBe(first);
+  });
 });
 
 describe("conversations", () => {

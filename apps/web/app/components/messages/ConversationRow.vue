@@ -56,7 +56,7 @@ const stamp = computed(() =>
         </span>
         <UBadge
           v-if="unread"
-          :label="unread > 99 ? '99+' : String(unread)"
+          :label="unread > 9 ? '9+' : String(unread)"
           color="primary"
           size="sm"
           class="ms-auto shrink-0 rounded-full"

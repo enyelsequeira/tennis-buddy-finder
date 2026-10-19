@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
+import type { Id } from "@tennis-buddy-finder/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 
 const props = defineProps<{
@@ -35,7 +36,7 @@ type Action = keyof typeof mutations;
 
 const busy = ref<Action | null>(null);
 
-const chatLink = (conversationId?: string) =>
+const chatLink = (conversationId?: Id<"conversations">) =>
   conversationId ? `/messages/${conversationId}` : "/messages";
 
 async function respond(action: Action) {

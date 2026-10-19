@@ -32,7 +32,11 @@ const { data: conversations, error, isPending } = useAuthedQuery(api.conversatio
     <ul v-else-if="conversations?.length" class="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2">
       <li v-for="conversation in conversations" :key="conversation.conversationId">
         <MessagesConversationRow
-          :conversation="conversation"
+          :conversation="
+            conversation.conversationId === activeId
+              ? { ...conversation, unreadCount: 0 }
+              : conversation
+          "
           :active="conversation.conversationId === activeId"
         />
       </li>

@@ -34,7 +34,17 @@ const { data: venues } = useAuthedQuery(api.venues.list);
 const player = computed(() => thread.data.value?.player ?? null);
 const name = computed(() => player.value?.displayName ?? t("chat.deletedPlayer"));
 const messages = computed(() => list.data.value?.messages ?? []);
-const notFound = computed(() => thread.error.value ?? list.error.value);
+const loadError = computed(() => thread.error.value ?? list.error.value);
+/** Missing, not a member, blocked or a malformed id; anything else is a load error. */
+const notFound = computed(() => {
+  const error = loadError.value;
+  if (!error) return false;
+  return (
+    convexErrorCode(error) === "NOT_FOUND" ||
+    /ArgumentValidationError|Validator/i.test(error instanceof Error ? error.message : "")
+  );
+});
+const failed = computed(() => Boolean(loadError.value) && !notFound.value);
 const isPending = computed(() => thread.isPending.value || list.isPending.value);
 
 useSeoMeta({ title: () => (player.value ? player.value.displayName : t("pages.messages.title")) });
@@ -85,31 +95,49 @@ function scrollToBottom(behavior: ScrollBehavior = "smooth") {
   if (el) el.scrollTo({ top: el.scrollHeight, behavior });
 }
 
-/** Set while older messages load, so the view stays where the reader was. */
-let anchor: { height: number; top: number } | null = null;
+const messageEl = (id: string) =>
+  scroller.value?.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(id)}"]`) ?? null;
+
+/**
+ * Set while older messages load: the first visible message and its offset, so
+ * the view stays put whatever renders above it (older rows, the button going away).
+ */
+let anchor: { id: string; top: number } | null = null;
 
 function loadEarlier() {
-  const el = scroller.value;
-  if (el) anchor = { height: el.scrollHeight, top: el.scrollTop };
+  const first = messages.value[0];
+  const el = first && messageEl(first._id);
+  if (el) anchor = { id: first._id, top: el.getBoundingClientRect().top };
   limit.value += PAGE_SIZE;
 }
 
+// Any new response after "load earlier" settles the anchor, even if nothing older came back.
 watch(
-  () => [messages.value[0]?._id, messages.value.at(-1)?._id] as const,
-  ([firstId, lastId], [previousFirstId, previousLastId]) => {
-    const el = scroller.value;
-    if (!el) return;
-    if (anchor && firstId !== previousFirstId) {
-      el.scrollTop = el.scrollHeight - anchor.height + anchor.top;
-      anchor = null;
-      return;
-    }
-    if (lastId === previousLastId) return;
+  () => list.data.value,
+  () => {
+    if (!anchor) return;
+    const el = messageEl(anchor.id);
+    if (el && scroller.value)
+      scroller.value.scrollTop += el.getBoundingClientRect().top - anchor.top;
+    anchor = null;
+  },
+  { flush: "post" },
+);
+
+watch(
+  () => messages.value.at(-1)?._id,
+  (lastId, previousLastId) => {
+    if (!scroller.value || anchor || lastId === previousLastId) return;
     // `arrivedState` was last updated by a scroll, i.e. before this message rendered.
     if (messages.value.at(-1)?.mine || arrivedState.bottom || !previousLastId) scrollToBottom();
   },
   { flush: "post" },
 );
+
+// The composer growing (or the keyboard opening) shrinks the thread: stay pinned.
+useResizeObserver(scroller, () => {
+  if (arrivedState.bottom) scrollToBottom("auto");
+});
 
 // ---- read state ------------------------------------------------------------
 
@@ -125,10 +153,13 @@ const markReadSoon = useDebounceFn(async () => {
   }
 }, 300);
 
+/** The newest message from the other player; own and optimistic sends never trigger a read. */
+const lastIncomingId = computed(() => messages.value.findLast((message) => !message.mine)?._id);
+
 watch(
-  () => [list.data.value !== undefined, messages.value.at(-1)?._id, visibility.value] as const,
-  ([loaded]) => {
-    if (loaded) markReadSoon();
+  [() => list.data.value !== undefined, lastIncomingId, visibility],
+  ([loaded, id]) => {
+    if (loaded && id) markReadSoon();
   },
   { immediate: true },
 );
@@ -272,7 +303,16 @@ async function confirmBlock() {
     />
 
     <template v-else>
-      <div
+      <UAlert
+        v-if="failed"
+        class="m-3"
+        color="error"
+        variant="soft"
+        icon="i-lucide-triangle-alert"
+        :title="t('chat.threadError')"
+      />
+
+      <section
         v-if="pinned"
         class="shrink-0 border-b border-default bg-elevated/60 px-3 md:px-4"
         :aria-label="t('chat.matchedSlot')"
@@ -284,11 +324,16 @@ async function confirmBlock() {
           :status="pinned.status"
           :venue="pinned.venue"
         />
-      </div>
+      </section>
 
       <!-- Positioned wrapper: the "jump to latest" button sits over the visible area. -->
       <div class="relative min-h-0 flex-1">
-        <div ref="scroller" class="h-full overflow-y-auto px-3 py-4 md:px-5" role="log">
+        <div
+          ref="scroller"
+          class="h-full overflow-y-auto overscroll-contain px-3 py-4 md:px-5"
+          role="log"
+          :aria-label="t('chat.threadLabel', { name })"
+        >
           <div v-if="isPending" class="space-y-3">
             <USkeleton class="h-10 w-2/3 rounded-2xl" />
             <USkeleton class="ms-auto h-10 w-1/2 rounded-2xl" />
@@ -333,6 +378,7 @@ async function confirmBlock() {
                 </p>
                 <UChatMessage
                   :id="item._id"
+                  :data-message-id="item._id"
                   :role="item.mine ? 'user' : 'assistant'"
                   :parts="[{ type: 'text', text: item.body }]"
                   compact
@@ -347,7 +393,7 @@ async function confirmBlock() {
                     <p class="whitespace-pre-wrap break-words">{{ item.body }}</p>
                     <p
                       class="mt-0.5 text-end text-[10px]"
-                      :class="item.mine ? 'text-inverted/70' : 'text-dimmed'"
+                      :class="item.mine ? 'opacity-85' : 'text-dimmed'"
                     >
                       <time>{{ formatTime(item._creationTime) }}</time>
                     </p>
@@ -362,7 +408,7 @@ async function confirmBlock() {
       <div
         class="shrink-0 border-t border-default bg-default px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:px-4 md:pb-3"
       >
-        <MessagesComposer v-model="draft" :disabled="isPending" @send="onSend" />
+        <MessagesComposer v-model="draft" :disabled="isPending || failed" @send="onSend" />
       </div>
     </template>
 
