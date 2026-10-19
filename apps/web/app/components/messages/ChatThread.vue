@@ -32,7 +32,11 @@ const list = useAuthedQuery(api.messages.list, () => ({
 const { data: venues } = useAuthedQuery(api.venues.list);
 
 const player = computed(() => thread.data.value?.player ?? null);
-const name = computed(() => player.value?.displayName ?? t("chat.deletedPlayer"));
+/** Empty while loading, so nothing announces a "deleted player" that is just not here yet. */
+const name = computed(() => {
+  if (!thread.data.value) return "";
+  return player.value?.displayName ?? t("chat.deletedPlayer");
+});
 const messages = computed(() => list.data.value?.messages ?? []);
 const loadError = computed(() => thread.error.value ?? list.error.value);
 /** Missing, not a member, blocked or a malformed id; anything else is a load error. */
@@ -332,7 +336,7 @@ async function confirmBlock() {
           ref="scroller"
           class="h-full overflow-y-auto overscroll-contain px-3 py-4 md:px-5"
           role="log"
-          :aria-label="t('chat.threadLabel', { name })"
+          :aria-label="name ? t('chat.threadLabel', { name }) : t('pages.messages.title')"
         >
           <div v-if="isPending" class="space-y-3">
             <USkeleton class="h-10 w-2/3 rounded-2xl" />
@@ -391,10 +395,7 @@ async function confirmBlock() {
                 >
                   <template #content>
                     <p class="whitespace-pre-wrap break-words">{{ item.body }}</p>
-                    <p
-                      class="mt-0.5 text-end text-[10px]"
-                      :class="item.mine ? 'opacity-85' : 'text-dimmed'"
-                    >
+                    <p class="mt-0.5 text-end text-[10px]" :class="item.mine ? '' : 'text-dimmed'">
                       <time>{{ formatTime(item._creationTime) }}</time>
                     </p>
                   </template>
