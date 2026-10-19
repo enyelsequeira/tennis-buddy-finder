@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser, getProfileForUser } from "./model/auth";
+import { isBanned } from "./model/blocks";
 import { fail } from "./model/errors";
 import { cancelPendingBetween } from "./model/requests";
 
@@ -12,7 +13,8 @@ export const block = mutation({
     const me = await getCurrentUser(ctx);
     if (args.userId === me._id) fail("CANNOT_BLOCK_SELF");
     const target = await ctx.db.get("users", args.userId);
-    if (!target) fail("NOT_FOUND");
+    // A banned player looks like they do not exist, as everywhere else.
+    if (!target || target.bannedAt !== undefined) fail("NOT_FOUND");
     const existing = await ctx.db
       .query("blocks")
       .withIndex("by_blockerId_and_blockedId", (q) =>
@@ -54,6 +56,8 @@ export const listMine = query({
       .take(500);
     const rows = [];
     for (const block of blocks) {
+      // The block row stays, so it applies again if the ban is lifted.
+      if (await isBanned(ctx, block.blockedId)) continue;
       const profile = await getProfileForUser(ctx, block.blockedId);
       rows.push({ userId: block.blockedId, displayName: profile?.displayName ?? "Deleted user" });
     }

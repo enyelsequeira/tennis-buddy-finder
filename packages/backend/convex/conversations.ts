@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { slotDoc } from "./availability";
 import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
-import { isBlockedEitherWay } from "./model/blocks";
+import { isHiddenFrom } from "./model/blocks";
 import {
   clearMessageNotifications,
   getMemberConversation,
@@ -63,7 +63,7 @@ export const list = query({
       const conversation = await ctx.db.get("conversations", membership.conversationId);
       if (!conversation) continue;
       const otherUserId = otherMemberId(conversation, user._id);
-      if (await isBlockedEitherWay(ctx, user._id, otherUserId)) continue;
+      if (await isHiddenFrom(ctx, user._id, otherUserId)) continue;
 
       const profile = await getProfileForUser(ctx, otherUserId);
       const last = await ctx.db

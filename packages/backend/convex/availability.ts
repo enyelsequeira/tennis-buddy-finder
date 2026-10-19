@@ -5,7 +5,7 @@ import { v, type Infer } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
-import { isBlockedEitherWay } from "./model/blocks";
+import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
 import { createNotification } from "./model/notifications";
 import { playerCard, toPlayerCard } from "./model/playerCard";
@@ -146,7 +146,7 @@ export const listOpenForUser = query({
   returns: v.array(slotDoc),
   handler: async (ctx, args) => {
     const { user } = await getCurrentProfile(ctx);
-    if (await isBlockedEitherWay(ctx, user._id, args.userId)) return [];
+    if (await isHiddenFrom(ctx, user._id, args.userId)) return [];
     const slots = await ctx.db
       .query("availabilitySlots")
       .withIndex("by_userId_and_startAt", (q) =>
@@ -228,7 +228,7 @@ export const search = query({
       });
 
     async function loadPlayer(userId: Id<"users">) {
-      if (userId === user._id || (await isBlockedEitherWay(ctx, user._id, userId))) return null;
+      if (userId === user._id || (await isHiddenFrom(ctx, user._id, userId))) return null;
       const player = await getProfileForUser(ctx, userId);
       if (!player || player.ntrp < args.minNtrp || player.ntrp > args.maxNtrp) return null;
       if (
