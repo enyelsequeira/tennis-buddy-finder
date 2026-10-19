@@ -19,6 +19,14 @@ const isDesktop = useBreakpoints(breakpointsTailwind).greaterOrEqual("md");
 const reducedMotion = usePreferredReducedMotion();
 const [DefineRows, ReuseRows] = createReusableTemplate();
 
+/** Message and acceptance notifications open the chat; request ones open the inbox. */
+function linkFor(row: Doc<"notifications">) {
+  if (row.conversationId && (row.type === "new_message" || row.type === "request_accepted")) {
+    return `/messages/${row.conversationId}`;
+  }
+  return row.type === "new_message" ? "/messages" : "/requests";
+}
+
 const open = ref(false);
 const rows = shallowRef<Doc<"notifications">[]>();
 
@@ -52,7 +60,7 @@ watch([open, unread], async ([isOpen, list], [wasOpen]) => {
       <ul v-else class="divide-y divide-default">
         <li v-for="row in rows" :key="row._id">
           <ULink
-            :to="row.type === 'new_message' ? '/messages' : '/requests'"
+            :to="linkFor(row)"
             class="flex items-start gap-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             @click="open = false"
           >

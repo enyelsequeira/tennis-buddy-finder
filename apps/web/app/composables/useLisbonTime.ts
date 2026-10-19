@@ -92,6 +92,27 @@ export function useLisbonTime() {
   /** "2026" */
   const formatYear = (ms: number) => lisbon(ms).format("YYYY");
 
+  /** Whether two instants fall on the same Lisbon calendar day. */
+  const isSameDay = (a: number, b: number) => lisbon(a).isSame(lisbon(b), "day");
+
+  // dayjs's isToday/isYesterday plugins compare against the browser zone, not Lisbon.
+  const isToday = (ms: number) => lisbon(ms).isSame(lisbon(now()), "day");
+  const isYesterday = (ms: number) => lisbon(ms).isSame(lisbon(now()).subtract(1, "day"), "day");
+
+  /** Chat date separator: "Today", "Yesterday" or the long day. */
+  function formatDayLabel(ms: number) {
+    if (isToday(ms)) return t("chat.today");
+    if (isYesterday(ms)) return t("chat.yesterday");
+    return formatLongDay(ms);
+  }
+
+  /** Conversation list stamp: the time today, "Yesterday", else the short day. */
+  function formatStamp(ms: number) {
+    if (isToday(ms)) return formatTime(ms);
+    if (isYesterday(ms)) return t("chat.yesterday");
+    return formatShortDay(ms);
+  }
+
   /** Whole years since an ISO `YYYY-MM-DD` birth date, on the Lisbon calendar. */
   const ageFromBirthDate = (birthDate: string) =>
     lisbon(now()).diff(dayjs.tz(birthDate, LISBON_TZ), "year");
@@ -140,6 +161,9 @@ export function useLisbonTime() {
     formatLongDay,
     formatShortDay,
     formatYear,
+    isSameDay,
+    formatDayLabel,
+    formatStamp,
     startOfMonth,
     dayBounds,
     monthBounds,
