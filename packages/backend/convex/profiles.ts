@@ -69,6 +69,7 @@ function getAvatarUpload(ctx: MutationCtx, storageId: Id<"_storage">) {
  * Records `storageId` as `userId`'s avatar upload; FORBIDDEN if another user claimed it.
  * shortcut: first claim wins, since an upload-URL POST carries no identity; upgrade to an authenticated httpAction upload route if storage ids can leak before they are claimed.
  * shortcut: rejected and abandoned uploads stay in storage (a throwing mutation rolls back deletes); upgrade to a scheduled cleanup of unclaimed files.
+ * shortcut: contentType is the uploader's declared Content-Type, not sniffed; upgrade to a magic-byte check in an action if avatars are ever served same-origin.
  */
 async function claimAvatar(ctx: MutationCtx, userId: Id<"users">, storageId: Id<"_storage">) {
   const upload = await getAvatarUpload(ctx, storageId);

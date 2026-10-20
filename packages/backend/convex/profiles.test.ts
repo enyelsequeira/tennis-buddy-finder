@@ -209,6 +209,26 @@ describe("profile avatars", () => {
     ).rejects.toThrow("INVALID_AVATAR");
   });
 
+  it("accepts an image of exactly 2 MB", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const avatarStorageId = await storeFile(t, "image/png", 2 * 1024 * 1024);
+    await u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId });
+    const profile = await u.as.query(api.profiles.mine, {});
+    expect(profile.avatarStorageId).toBe(avatarStorageId);
+  });
+
+  it("rejects a file uploaded without a content type", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const avatarStorageId = await t.run(async (ctx) =>
+      ctx.storage.store(new Blob([new Uint8Array(16)])),
+    );
+    await expect(
+      u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId }),
+    ).rejects.toThrow("INVALID_AVATAR");
+  });
+
   it("rejects a storage id whose file no longer exists", async () => {
     const t = setup();
     const u = await createUser(t);
