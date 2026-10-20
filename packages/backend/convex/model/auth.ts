@@ -1,7 +1,8 @@
-import type { Doc } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 import { fail } from "./errors";
+import { getUserByAuthId } from "./users";
 
 export type Ctx = QueryCtx | MutationCtx;
 
@@ -12,15 +13,12 @@ export type Ctx = QueryCtx | MutationCtx;
 export async function getCurrentUser(ctx: Ctx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) fail("UNAUTHENTICATED");
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_authId", (q) => q.eq("authId", identity.subject))
-    .unique();
+  const user = await getUserByAuthId(ctx, identity.subject);
   if (!user || user.bannedAt !== undefined) fail("UNAUTHENTICATED");
   return user;
 }
 
-export async function getProfileForUser(ctx: Ctx, userId: Doc<"users">["_id"]) {
+export async function getProfileForUser(ctx: Ctx, userId: Id<"users">) {
   return ctx.db
     .query("profiles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
