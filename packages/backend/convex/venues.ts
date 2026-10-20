@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 import { internalMutation, query } from "./_generated/server";
 import { getCurrentProfile } from "./model/auth";
+import { LAUNCH_DISTRICT, LAUNCH_MUNICIPALITY } from "./model/validators";
 import schema from "./schema";
 
 /**
@@ -34,7 +35,7 @@ export const seedFigueira = internalMutation({
   handler: async (ctx) => {
     const existing = await ctx.db
       .query("venues")
-      .withIndex("by_municipality", (q) => q.eq("municipality", "Figueira da Foz"))
+      .withIndex("by_municipality", (q) => q.eq("municipality", LAUNCH_MUNICIPALITY))
       .take(100);
     const names = new Set(existing.map((venue) => venue.name));
     let inserted = 0;
@@ -42,8 +43,8 @@ export const seedFigueira = internalMutation({
       if (names.has(venue.name)) continue;
       await ctx.db.insert("venues", {
         ...venue,
-        district: "Coimbra",
-        municipality: "Figueira da Foz",
+        district: LAUNCH_DISTRICT,
+        municipality: LAUNCH_MUNICIPALITY,
         isActive: true,
       });
       inserted += 1;

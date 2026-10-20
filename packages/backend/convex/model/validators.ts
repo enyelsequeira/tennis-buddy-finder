@@ -72,3 +72,7 @@ export function paginated<T extends Validator<any, "required", any>>(item: T) {
     ),
   });
 }
+
+/** Launch scope: one municipality. Widen when the picker ships. */
+export const LAUNCH_DISTRICT = "Coimbra";
+export const LAUNCH_MUNICIPALITY = "Figueira da Foz";

@@ -7,12 +7,14 @@ import { getCurrentProfile, getCurrentUser, getProfileForUser } from "./model/au
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
 import { ageOn, MIN_AGE, parseIsoDate } from "./model/time";
-import { formatsValidator, genderValidator, handednessValidator } from "./model/validators";
+import {
+  formatsValidator,
+  genderValidator,
+  handednessValidator,
+  LAUNCH_DISTRICT,
+  LAUNCH_MUNICIPALITY,
+} from "./model/validators";
 import schema from "./schema";
-
-/** Launch scope: one municipality. Widen when the picker ships. */
-const LAUNCH_DISTRICT = "Coimbra";
-const LAUNCH_MUNICIPALITY = "Figueira da Foz";
 
 const profileInputFields = {
   displayName: v.string(),

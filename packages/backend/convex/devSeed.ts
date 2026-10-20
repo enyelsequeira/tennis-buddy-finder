@@ -4,6 +4,7 @@ import { internalMutation } from "./_generated/server";
 import { createNotification } from "./model/notifications";
 import { latestRequest } from "./model/requests";
 import { DAY, HOUR } from "./model/time";
+import { LAUNCH_DISTRICT, LAUNCH_MUNICIPALITY } from "./model/validators";
 
 const SEED_PREFIX = "seed:";
 
@@ -72,8 +73,8 @@ export const demoPlayers = internalMutation({
         ntrp: player.ntrp,
         yearsPlaying: player.yearsPlaying,
         formats: "both",
-        district: "Coimbra",
-        municipality: "Figueira da Foz",
+        district: LAUNCH_DISTRICT,
+        municipality: LAUNCH_MUNICIPALITY,
         languages: ["pt", "en"],
       });
       for (const offset of DAY_OFFSETS) {
@@ -82,8 +83,8 @@ export const demoPlayers = internalMutation({
           userId,
           startAt,
           endAt: startAt + 1.5 * HOUR,
-          district: "Coimbra",
-          municipality: "Figueira da Foz",
+          district: LAUNCH_DISTRICT,
+          municipality: LAUNCH_MUNICIPALITY,
           status: "open",
         });
       }
