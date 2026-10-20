@@ -1,16 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
-import { createUser, DAY, HOUR, NOW, setup, type T } from "./test.helpers";
-
-/** 2026-09-09T10:00Z */
-const tomorrow10 = NOW + DAY - 2 * HOUR;
-
-type TestUser = Awaited<ReturnType<typeof createUser>>;
-
-function createSlot(user: TestUser, startAt = tomorrow10) {
-  return user.as.mutation(api.availability.create, { startAt, endAt: startAt + HOUR });
-}
+import { createSlot, createUser, HOUR, NOW, setup, type T, tomorrow10 } from "./test.helpers";
 
 function allConversations(t: T) {
   return t.run(async (ctx) => ctx.db.query("conversations").take(10));

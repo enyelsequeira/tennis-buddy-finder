@@ -1,23 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
-import { createUser, DAY, HOUR, NOW, setup, type T } from "./test.helpers";
-
-/** 2026-09-09T10:00Z */
-const tomorrow10 = NOW + DAY - 2 * HOUR;
-
-type TestUser = Awaited<ReturnType<typeof createUser>>;
-
-/** Owner posts a slot, asker requests it, owner accepts: returns the conversation. */
-async function match(owner: TestUser, asker: TestUser, startAt = tomorrow10) {
-  const slotId = await owner.as.mutation(api.availability.create, {
-    startAt,
-    endAt: startAt + HOUR,
-  });
-  const requestId = await asker.as.mutation(api.matchRequests.send, { slotId });
-  const conversationId = await owner.as.mutation(api.matchRequests.accept, { requestId });
-  return { slotId, requestId, conversationId };
-}
+import {
+  createUser,
+  DAY,
+  HOUR,
+  match,
+  setup,
+  type T,
+  type TestUser,
+  tomorrow10,
+} from "./test.helpers";
 
 async function pair(t: T) {
   const owner = await createUser(t);

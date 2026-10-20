@@ -1,24 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { createUser, DAY, HOUR, NOW, setup, type T } from "./test.helpers";
+import { ban, createSlot, createUser, HOUR, page, setup, tomorrow10, week } from "./test.helpers";
 
-/** 2026-09-09T10:00Z */
-const tomorrow10 = NOW + DAY - 2 * HOUR;
-const week = { from: NOW, to: NOW + 7 * DAY };
-const page = { numItems: 50, cursor: null };
 const anyLevel = { minNtrp: 1, maxNtrp: 7 };
-
-type TestUser = Awaited<ReturnType<typeof createUser>>;
-
-function createSlot(user: TestUser, startAt = tomorrow10) {
-  return user.as.mutation(api.availability.create, { startAt, endAt: startAt + HOUR });
-}
-
-function ban(t: T, userId: Id<"users">) {
-  return t.run(async (ctx) => ctx.db.patch("users", userId, { bannedAt: NOW }));
-}
 
 describe("banned users are hidden from other players", () => {
   it("search skips a banned player's open slots", async () => {

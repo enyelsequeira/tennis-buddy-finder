@@ -2,18 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { createUser, DAY, HOUR, NOW, setup, type T } from "./test.helpers";
-
-/** 2026-09-09T10:00Z */
-const tomorrow10 = NOW + DAY - 2 * HOUR;
-const week = { from: NOW, to: NOW + 7 * DAY };
-const page = { numItems: 50, cursor: null };
-
-type TestUser = Awaited<ReturnType<typeof createUser>>;
-
-function createSlot(user: TestUser, startAt: number) {
-  return user.as.mutation(api.availability.create, { startAt, endAt: startAt + HOUR });
-}
+import {
+  createSlot,
+  createUser,
+  DAY,
+  HOUR,
+  NOW,
+  page,
+  setup,
+  type T,
+  tomorrow10,
+  week,
+} from "./test.helpers";
 
 type RawSlot = {
   userId: Id<"users">;

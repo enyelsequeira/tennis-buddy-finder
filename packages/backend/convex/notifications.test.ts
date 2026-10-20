@@ -1,23 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { createNotification } from "./model/notifications";
-import { createUser, DAY, HOUR, NOW, setup, type T } from "./test.helpers";
-
-/** 2026-09-09T10:00Z */
-const tomorrow10 = NOW + DAY - 2 * HOUR;
-
-type TestUser = Awaited<ReturnType<typeof createUser>>;
-
-function ban(t: T, userId: Id<"users">) {
-  return t.run(async (ctx) => ctx.db.patch("users", userId, { bannedAt: NOW }));
-}
+import { ban, createUser, HOUR, setup, type TestUser, tomorrow10 } from "./test.helpers";
 
 let slotCounter = 0;
 
 /** Each call gets its own two-hour window, so slots never overlap. */
-function createSlot(user: TestUser) {
+function nextSlot(user: TestUser) {
   const startAt = tomorrow10 + 2 * HOUR * slotCounter++;
   return user.as.mutation(api.availability.create, { startAt, endAt: startAt + HOUR });
 }
@@ -28,13 +18,13 @@ function createSlot(user: TestUser) {
  * another (`request_accepted`), then messages me (`new_message`).
  */
 async function notesFrom(other: TestUser, me: TestUser) {
-  await other.as.mutation(api.matchRequests.send, { slotId: await createSlot(me) });
+  await other.as.mutation(api.matchRequests.send, { slotId: await nextSlot(me) });
   const declinedId = await me.as.mutation(api.matchRequests.send, {
-    slotId: await createSlot(other),
+    slotId: await nextSlot(other),
   });
   await other.as.mutation(api.matchRequests.decline, { requestId: declinedId });
   const requestId = await me.as.mutation(api.matchRequests.send, {
-    slotId: await createSlot(other),
+    slotId: await nextSlot(other),
   });
   const conversationId = await other.as.mutation(api.matchRequests.accept, { requestId });
   await other.as.mutation(api.messages.send, { conversationId, body: "see you there" });
