@@ -24,11 +24,15 @@ function createSlot(user: TestUser) {
 
 /**
  * Gives `me` one notification of each kind caused by `other`: `other` requests my slot
- * (`request_received`), `other` accepts my request (`request_accepted`), then messages me
- * (`new_message`).
+ * (`request_received`), declines one request of mine (`request_declined`), accepts
+ * another (`request_accepted`), then messages me (`new_message`).
  */
 async function notesFrom(other: TestUser, me: TestUser) {
   await other.as.mutation(api.matchRequests.send, { slotId: await createSlot(me) });
+  const declinedId = await me.as.mutation(api.matchRequests.send, {
+    slotId: await createSlot(other),
+  });
+  await other.as.mutation(api.matchRequests.decline, { requestId: declinedId });
   const requestId = await me.as.mutation(api.matchRequests.send, {
     slotId: await createSlot(other),
   });
@@ -41,7 +45,7 @@ async function unreadTypes(user: TestUser) {
   return (await user.as.query(api.notifications.unread, {})).map((n) => n.type).sort();
 }
 
-const ALL_TYPES = ["new_message", "request_accepted", "request_received"];
+const ALL_TYPES = ["new_message", "request_accepted", "request_declined", "request_received"];
 
 describe("notifications", () => {
   it("lists unread for me only, newest first, and marks all read", async () => {
@@ -97,7 +101,7 @@ describe("notifications", () => {
     await notesFrom(iBlocked, me);
     await notesFrom(blockedMe, me);
     await notesFrom(other, me);
-    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(9);
+    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(12);
 
     await me.as.mutation(api.blocks.block, { userId: iBlocked.userId });
     await blockedMe.as.mutation(api.blocks.block, { userId: me.userId });
@@ -105,7 +109,7 @@ describe("notifications", () => {
     expect(await unreadTypes(me)).toEqual(ALL_TYPES);
 
     await me.as.mutation(api.blocks.unblock, { userId: iBlocked.userId });
-    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(6);
+    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(8);
   });
 
   it("keeps notifications whose request or conversation points at a deleted player", async () => {

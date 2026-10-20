@@ -12,7 +12,8 @@ import schema from "./schema";
 const MAX_UNREAD = 50;
 /** Unread rows scanned to fill `MAX_UNREAD`, so hidden ones do not eat the cap. */
 const MAX_UNREAD_SCANNED = 200;
-const MAX_MARKED_PER_CALL = 200;
+/** At least `MAX_UNREAD_SCANNED`, so every row `unread` can show gets marked. */
+const MAX_MARKED_PER_CALL = MAX_UNREAD_SCANNED;
 
 /** The other player a notification is about, if it points at a request or conversation. */
 async function counterpartOf(ctx: Ctx, row: Doc<"notifications">) {
@@ -37,8 +38,9 @@ export const unread = query({
       .withIndex("by_userId_and_readAt", (q) => q.eq("userId", me._id).eq("readAt", undefined))
       .order("desc")
       .take(MAX_UNREAD_SCANNED);
-    // Rows about a banned or blocked player stay unread but are not shown, as their
-    // request or chat looks like it does not exist. They come back if that changes.
+    // Rows about a banned or blocked player are not shown, as their request or chat looks
+    // like it does not exist. They stay unread and come back if that changes, unless
+    // `markAllRead` swept them meanwhile.
     const hidden = new Map<Id<"users">, boolean>();
     const visible = [];
     for (const row of rows) {
