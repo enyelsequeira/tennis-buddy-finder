@@ -1,9 +1,9 @@
 import { v, type ObjectType } from "convex/values";
 
-import type { Doc } from "./_generated/dataModel";
 import { getProfileForUser, profileMutation, profileQuery, userMutation } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
+import { playerCard, toPlayerCard } from "./model/playerCard";
 import { LANGUAGE_CODE } from "./model/profileSchema";
 import { ageOn, MIN_AGE, parseIsoDate } from "./model/time";
 import {
@@ -46,11 +46,12 @@ function validateProfileInput(input: ProfileInput) {
   return { ...input, displayName: name };
 }
 
-const profileWithAge = schema.doc("profiles").extend({ age: v.number() });
-
-function withAge(profile: Doc<"profiles">) {
-  return { ...profile, age: ageOn(profile.birthDate, Date.now()) };
-}
+const publicProfile = playerCard.extend({
+  municipality: v.string(),
+  district: v.string(),
+  handedness: v.optional(handednessValidator),
+  bio: v.optional(v.string()),
+});
 
 export const create = userMutation({
   args: profileInputFields,
@@ -91,12 +92,18 @@ export const mine = profileQuery({
 
 export const getByUserId = profileQuery({
   args: { userId: v.id("users") },
-  returns: profileWithAge,
+  returns: publicProfile,
   handler: async (ctx, args) => {
     const { user } = ctx;
     if (await isHiddenFrom(ctx, user._id, args.userId)) fail("NOT_FOUND");
     const profile = await getProfileForUser(ctx, args.userId);
     if (!profile) fail("NOT_FOUND");
-    return withAge(profile);
+    return {
+      ...toPlayerCard(profile),
+      municipality: profile.municipality,
+      district: profile.district,
+      handedness: profile.handedness,
+      bio: profile.bio,
+    };
   },
 });
