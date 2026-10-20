@@ -1,4 +1,3 @@
-import { doc } from "convex-helpers/validators";
 import { v } from "convex/values";
 
 import { internalMutation, mutation, query } from "./_generated/server";
@@ -9,8 +8,8 @@ import schema from "./schema";
 export const me = query({
   args: {},
   returns: v.object({
-    user: doc(schema, "users"),
-    profile: v.union(doc(schema, "profiles"), v.null()),
+    user: schema.doc("users"),
+    profile: v.union(schema.doc("profiles"), v.null()),
   }),
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);

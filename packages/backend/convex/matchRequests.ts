@@ -1,4 +1,3 @@
-import { doc } from "convex-helpers/validators";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -17,7 +16,7 @@ const MAX_MESSAGE = 300;
 const MAX_LIST = 100;
 
 const requestView = v.object({
-  request: doc(schema, "matchRequests"),
+  request: schema.doc("matchRequests"),
   slot: slotDoc,
   player: playerCard,
 });

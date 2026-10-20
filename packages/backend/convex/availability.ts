@@ -1,4 +1,3 @@
-import { doc } from "convex-helpers/validators";
 import { paginationOptsValidator } from "convex/server";
 import { v, type Infer } from "convex/values";
 
@@ -14,7 +13,7 @@ import { DAY, isOnSlotGrid, MAX_SLOT_MS } from "./model/time";
 import { formatsValidator, paginated } from "./model/validators";
 import schema from "./schema";
 
-export const slotDoc = doc(schema, "availabilitySlots");
+export const slotDoc = schema.doc("availabilitySlots");
 
 const MAX_SLOTS_PER_QUERY = 200;
 const MAX_NOTE = 200;

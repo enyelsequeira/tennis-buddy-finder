@@ -1,4 +1,3 @@
-import { doc } from "convex-helpers/validators";
 import { v, type ObjectType } from "convex/values";
 
 import type { Doc } from "./_generated/dataModel";
@@ -48,12 +47,7 @@ function validateProfileInput(input: ProfileInput) {
   return { ...input, displayName: name };
 }
 
-const profileWithAge = v.object({
-  ...schema.tables.profiles.validator.fields,
-  _id: v.id("profiles"),
-  _creationTime: v.number(),
-  age: v.number(),
-});
+const profileWithAge = schema.doc("profiles").extend({ age: v.number() });
 
 function withAge(profile: Doc<"profiles">) {
   return { ...profile, age: ageOn(profile.birthDate, Date.now()) };
@@ -89,7 +83,7 @@ export const update = mutation({
 
 export const mine = query({
   args: {},
-  returns: doc(schema, "profiles"),
+  returns: schema.doc("profiles"),
   handler: async (ctx) => {
     const { profile } = await getCurrentProfile(ctx);
     return profile;

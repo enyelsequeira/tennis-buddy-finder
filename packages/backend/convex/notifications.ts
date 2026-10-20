@@ -1,4 +1,3 @@
-import { doc } from "convex-helpers/validators";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -31,7 +30,7 @@ async function counterpartOf(ctx: Ctx, row: Doc<"notifications">) {
 
 export const unread = query({
   args: {},
-  returns: v.array(doc(schema, "notifications")),
+  returns: v.array(schema.doc("notifications")),
   handler: async (ctx) => {
     const me = await getCurrentUser(ctx);
     const rows = await unreadNotifications(ctx, me._id, MAX_UNREAD_SCANNED);

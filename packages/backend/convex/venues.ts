@@ -1,4 +1,3 @@
-import { doc } from "convex-helpers/validators";
 import { v } from "convex/values";
 
 import { internalMutation, query } from "./_generated/server";
@@ -17,7 +16,7 @@ const FIGUEIRA_VENUES = [
 
 export const list = query({
   args: {},
-  returns: v.array(doc(schema, "venues")),
+  returns: v.array(schema.doc("venues")),
   handler: async (ctx) => {
     const { profile } = await getCurrentProfile(ctx);
     const venues = await ctx.db
