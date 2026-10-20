@@ -8,6 +8,7 @@ import { isHiddenFrom } from "./model/blocks";
 import {
   clearMessageNotifications,
   getMemberConversation,
+  latestMessage,
   otherMemberId,
   unreadMessages,
 } from "./model/conversations";
@@ -66,11 +67,7 @@ export const list = query({
       if (await isHiddenFrom(ctx, user._id, otherUserId)) continue;
 
       const profile = await getProfileForUser(ctx, otherUserId);
-      const last = await ctx.db
-        .query("messages")
-        .withIndex("by_conversationId", (q) => q.eq("conversationId", conversation._id))
-        .order("desc")
-        .first();
+      const last = await latestMessage(ctx, conversation._id);
       const unread = await unreadMessages(ctx, {
         conversationId: conversation._id,
         userId: user._id,
@@ -130,11 +127,7 @@ export const markRead = mutation({
       conversationId: args.conversationId,
       userId: user._id,
     });
-    const newest = await ctx.db
-      .query("messages")
-      .withIndex("by_conversationId", (q) => q.eq("conversationId", args.conversationId))
-      .order("desc")
-      .first();
+    const newest = await latestMessage(ctx, args.conversationId);
     // Only write when something is unread, so an open thread does not churn its own queries.
     if (newest && newest._creationTime > (membership.lastReadAt ?? 0)) {
       await ctx.db.patch("conversationMembers", membership._id, {

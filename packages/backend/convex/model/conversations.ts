@@ -82,6 +82,15 @@ export async function unreadMessages(ctx: Ctx, options: UnreadOptions) {
   return rows.filter((row) => row.senderId !== options.userId);
 }
 
+/** The newest message in a conversation, if any. */
+export async function latestMessage(ctx: Ctx, conversationId: Id<"conversations">) {
+  return ctx.db
+    .query("messages")
+    .withIndex("by_conversationId", (q) => q.eq("conversationId", conversationId))
+    .order("desc")
+    .first();
+}
+
 /** Unread `new_message` notifications of `userId` for one conversation. */
 export async function unreadMessageNotifications(
   ctx: Ctx,
