@@ -1,8 +1,47 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { createNotification } from "./model/notifications";
-import { createUser, setup } from "./test.helpers";
+import { createUser, DAY, HOUR, NOW, setup, type T } from "./test.helpers";
+
+/** 2026-09-09T10:00Z */
+const tomorrow10 = NOW + DAY - 2 * HOUR;
+
+type TestUser = Awaited<ReturnType<typeof createUser>>;
+
+function ban(t: T, userId: Id<"users">) {
+  return t.run(async (ctx) => ctx.db.patch("users", userId, { bannedAt: NOW }));
+}
+
+let slotCounter = 0;
+
+/** Each call gets its own two-hour window, so slots never overlap. */
+function createSlot(user: TestUser) {
+  const startAt = tomorrow10 + 2 * HOUR * slotCounter++;
+  return user.as.mutation(api.availability.create, { startAt, endAt: startAt + HOUR });
+}
+
+/**
+ * Gives `me` one notification of each kind caused by `other`: `other` requests my slot
+ * (`request_received`), `other` accepts my request (`request_accepted`), then messages me
+ * (`new_message`).
+ */
+async function notesFrom(other: TestUser, me: TestUser) {
+  await other.as.mutation(api.matchRequests.send, { slotId: await createSlot(me) });
+  const requestId = await me.as.mutation(api.matchRequests.send, {
+    slotId: await createSlot(other),
+  });
+  const conversationId = await other.as.mutation(api.matchRequests.accept, { requestId });
+  await other.as.mutation(api.messages.send, { conversationId, body: "see you there" });
+  return { conversationId };
+}
+
+async function unreadTypes(user: TestUser) {
+  return (await user.as.query(api.notifications.unread, {})).map((n) => n.type).sort();
+}
+
+const ALL_TYPES = ["new_message", "request_accepted", "request_received"];
 
 describe("notifications", () => {
   it("lists unread for me only, newest first, and marks all read", async () => {
@@ -33,5 +72,71 @@ describe("notifications", () => {
     );
     await a.as.mutation(api.notifications.markRead, { notificationId: id });
     expect(await a.as.query(api.notifications.unread, {})).toHaveLength(0);
+  });
+
+  it("hides notifications pointing at a player who was banned afterwards", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const banned = await createUser(t);
+    const other = await createUser(t);
+    await notesFrom(banned, me);
+    await notesFrom(other, me);
+    expect(await unreadTypes(me)).toEqual([...ALL_TYPES, ...ALL_TYPES].sort());
+
+    await ban(t, banned.userId);
+
+    expect(await unreadTypes(me)).toEqual(ALL_TYPES);
+  });
+
+  it("hides notifications from a player I blocked, and from one who blocked me", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const iBlocked = await createUser(t);
+    const blockedMe = await createUser(t);
+    const other = await createUser(t);
+    await notesFrom(iBlocked, me);
+    await notesFrom(blockedMe, me);
+    await notesFrom(other, me);
+    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(9);
+
+    await me.as.mutation(api.blocks.block, { userId: iBlocked.userId });
+    await blockedMe.as.mutation(api.blocks.block, { userId: me.userId });
+
+    expect(await unreadTypes(me)).toEqual(ALL_TYPES);
+
+    await me.as.mutation(api.blocks.unblock, { userId: iBlocked.userId });
+    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(6);
+  });
+
+  it("keeps notifications whose request or conversation points at a deleted player", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const gone = await createUser(t);
+    await notesFrom(gone, me);
+
+    await t.run(async (ctx) => ctx.db.delete("users", gone.userId));
+
+    expect(await unreadTypes(me)).toEqual(ALL_TYPES);
+  });
+
+  it("still returns up to 50 visible notifications when newer hidden ones fill the window", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const banned = await createUser(t);
+    const { conversationId } = await notesFrom(banned, me);
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 60; i++) {
+        await createNotification(ctx, { userId: me.userId, type: "request_received" });
+      }
+      for (let i = 0; i < 60; i++) {
+        await createNotification(ctx, { userId: me.userId, type: "new_message", conversationId });
+      }
+    });
+
+    await ban(t, banned.userId);
+
+    const unread = await me.as.query(api.notifications.unread, {});
+    expect(unread).toHaveLength(50);
+    expect(unread.every((n) => n.type === "request_received")).toBe(true);
   });
 });

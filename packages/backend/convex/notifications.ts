@@ -1,24 +1,58 @@
 import { doc } from "convex-helpers/validators";
 import { v } from "convex/values";
 
+import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { getCurrentUser } from "./model/auth";
+import { getCurrentUser, type Ctx } from "./model/auth";
+import { isHiddenFrom } from "./model/blocks";
+import { otherMemberId } from "./model/conversations";
 import { fail } from "./model/errors";
 import schema from "./schema";
 
 const MAX_UNREAD = 50;
+/** Unread rows scanned to fill `MAX_UNREAD`, so hidden ones do not eat the cap. */
+const MAX_UNREAD_SCANNED = 200;
 const MAX_MARKED_PER_CALL = 200;
+
+/** The other player a notification is about, if it points at a request or conversation. */
+async function counterpartOf(ctx: Ctx, row: Doc<"notifications">) {
+  if (row.requestId) {
+    const request = await ctx.db.get("matchRequests", row.requestId);
+    if (request) return request.fromUserId === row.userId ? request.toUserId : request.fromUserId;
+  }
+  if (row.conversationId) {
+    const conversation = await ctx.db.get("conversations", row.conversationId);
+    if (conversation) return otherMemberId(conversation, row.userId);
+  }
+  return null;
+}
 
 export const unread = query({
   args: {},
   returns: v.array(doc(schema, "notifications")),
   handler: async (ctx) => {
     const me = await getCurrentUser(ctx);
-    return ctx.db
+    const rows = await ctx.db
       .query("notifications")
       .withIndex("by_userId_and_readAt", (q) => q.eq("userId", me._id).eq("readAt", undefined))
       .order("desc")
-      .take(MAX_UNREAD);
+      .take(MAX_UNREAD_SCANNED);
+    // Rows about a banned or blocked player stay unread but are not shown, as their
+    // request or chat looks like it does not exist. They come back if that changes.
+    const hidden = new Map<Id<"users">, boolean>();
+    const visible = [];
+    for (const row of rows) {
+      const counterpart = await counterpartOf(ctx, row);
+      if (counterpart) {
+        if (!hidden.has(counterpart)) {
+          hidden.set(counterpart, await isHiddenFrom(ctx, me._id, counterpart));
+        }
+        if (hidden.get(counterpart)) continue;
+      }
+      visible.push(row);
+      if (visible.length === MAX_UNREAD) break;
+    }
+    return visible;
   },
 });
 
