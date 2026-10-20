@@ -1,6 +1,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
+import type { Ctx } from "./auth";
 import { createNotification } from "./notifications";
 
 const MAX_PENDING = 100;
@@ -15,6 +16,21 @@ export async function declineRequest(ctx: MutationCtx, request: Doc<"matchReques
     type: "request_declined",
     requestId: request._id,
   });
+}
+
+/** `fromUserId`'s newest request on a slot; only that one can be pending. */
+export async function latestRequest(
+  ctx: Ctx,
+  slotId: Id<"availabilitySlots">,
+  fromUserId: Id<"users">,
+) {
+  return ctx.db
+    .query("matchRequests")
+    .withIndex("by_slotId_and_fromUserId", (q) =>
+      q.eq("slotId", slotId).eq("fromUserId", fromUserId),
+    )
+    .order("desc")
+    .first();
 }
 
 type DeclineOptions = { slotId: Id<"availabilitySlots">; except?: Id<"matchRequests"> };

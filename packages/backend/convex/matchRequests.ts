@@ -10,7 +10,7 @@ import { getOrCreateConversation } from "./model/conversations";
 import { fail } from "./model/errors";
 import { createNotification } from "./model/notifications";
 import { playerCard, toPlayerCard } from "./model/playerCard";
-import { declinePendingForSlot, declineRequest } from "./model/requests";
+import { declinePendingForSlot, declineRequest, latestRequest } from "./model/requests";
 import schema from "./schema";
 
 const MAX_MESSAGE = 300;
@@ -69,13 +69,7 @@ export const send = mutation({
     if (slot.startAt <= Date.now()) fail("SLOT_IN_PAST");
     if (await isBlockedEitherWay(ctx, user._id, slot.userId)) fail("BLOCKED");
     // A new request is refused while one is pending, so only my newest one can be pending.
-    const latest = await ctx.db
-      .query("matchRequests")
-      .withIndex("by_slotId_and_fromUserId", (q) =>
-        q.eq("slotId", slot._id).eq("fromUserId", user._id),
-      )
-      .order("desc")
-      .first();
+    const latest = await latestRequest(ctx, slot._id, user._id);
     if (latest?.status === "pending") fail("REQUEST_EXISTS");
     const requestId = await ctx.db.insert("matchRequests", {
       slotId: slot._id,

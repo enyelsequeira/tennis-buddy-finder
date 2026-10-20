@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import { internalMutation } from "./_generated/server";
 import { createNotification } from "./model/notifications";
+import { latestRequest } from "./model/requests";
 import { DAY } from "./model/time";
 
 const HOUR = DAY / 24;
@@ -99,13 +100,7 @@ export const demoPlayers = internalMutation({
         .take(20);
       const slot = slots.find((candidate) => candidate.status === "open");
       if (!slot) continue;
-      const latest = await ctx.db
-        .query("matchRequests")
-        .withIndex("by_slotId_and_fromUserId", (q) =>
-          q.eq("slotId", slot._id).eq("fromUserId", requester),
-        )
-        .order("desc")
-        .first();
+      const latest = await latestRequest(ctx, slot._id, requester);
       if (latest?.status === "pending") continue;
       const requestId = await ctx.db.insert("matchRequests", {
         slotId: slot._id,
