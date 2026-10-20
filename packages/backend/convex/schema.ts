@@ -46,6 +46,12 @@ export default defineSchema({
     languages: v.array(v.string()),
   }).index("by_userId", ["userId"]),
 
+  /** Who claimed each uploaded avatar file, so a profile can only point at its own uploads. */
+  avatarUploads: defineTable({
+    userId: v.id("users"),
+    storageId: v.id("_storage"),
+  }).index("by_storageId", ["storageId"]),
+
   venues: defineTable({
     name: v.string(),
     district: v.string(),

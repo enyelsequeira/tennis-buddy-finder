@@ -152,7 +152,8 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
   (availability slots, match requests, messages are their own tables). Small bounded arrays only
   (e.g. `preferredSurfaces`).
 - Files (avatars): store `Id<"_storage">` (`v.id("_storage")`), resolve with `ctx.storage.getUrl()` on
-  read; upload via `ctx.storage.generateUploadUrl()` in a mutation.
+  read; upload via `ctx.storage.generateUploadUrl()` in a mutation. Avatars: `profiles.create`/`update`
+  claim the id in `avatarUploads` (owner check, jpeg/png/webp, max 2 MB) and delete the replaced file.
 - Recurring work in `crons.ts` (`cronJobs()`, targets `internal.*`); one-off delays via
   `ctx.scheduler.runAfter(ms, internal.x.y, args)` from a mutation.
 

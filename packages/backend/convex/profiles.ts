@@ -1,5 +1,7 @@
 import { v, type ObjectType } from "convex/values";
 
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { getProfileForUser, profileMutation, profileQuery, userMutation } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
@@ -53,6 +55,46 @@ const publicProfile = playerCard.extend({
   bio: v.optional(v.string()),
 });
 
+const AVATAR_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+
+function getAvatarUpload(ctx: MutationCtx, storageId: Id<"_storage">) {
+  return ctx.db
+    .query("avatarUploads")
+    .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+    .unique();
+}
+
+/**
+ * Records `storageId` as `userId`'s avatar upload; FORBIDDEN if another user claimed it.
+ * shortcut: first claim wins, since an upload-URL POST carries no identity; upgrade to an authenticated httpAction upload route if storage ids can leak before they are claimed.
+ * shortcut: rejected and abandoned uploads stay in storage (a throwing mutation rolls back deletes); upgrade to a scheduled cleanup of unclaimed files.
+ */
+async function claimAvatar(ctx: MutationCtx, userId: Id<"users">, storageId: Id<"_storage">) {
+  const upload = await getAvatarUpload(ctx, storageId);
+  if (upload) {
+    if (upload.userId !== userId) fail("FORBIDDEN");
+    return;
+  }
+  const file = await ctx.db.system.get("_storage", storageId);
+  if (
+    !file ||
+    !AVATAR_CONTENT_TYPES.includes(file.contentType ?? "") ||
+    file.size > AVATAR_MAX_BYTES
+  ) {
+    fail("INVALID_AVATAR");
+  }
+  await ctx.db.insert("avatarUploads", { userId, storageId });
+}
+
+/** Deletes a replaced avatar file, only when `userId` uploaded it. */
+async function deleteAvatar(ctx: MutationCtx, userId: Id<"users">, storageId: Id<"_storage">) {
+  const upload = await getAvatarUpload(ctx, storageId);
+  if (upload?.userId !== userId) return;
+  await ctx.db.delete("avatarUploads", upload._id);
+  await ctx.storage.delete(storageId);
+}
+
 export const create = userMutation({
   args: profileInputFields,
   returns: v.id("profiles"),
@@ -61,6 +103,7 @@ export const create = userMutation({
     const existing = await getProfileForUser(ctx, user._id);
     if (existing) fail("PROFILE_EXISTS");
     const input = validateProfileInput(args);
+    if (input.avatarStorageId) await claimAvatar(ctx, user._id, input.avatarStorageId);
     return ctx.db.insert("profiles", {
       ...input,
       userId: user._id,
@@ -74,11 +117,23 @@ export const update = profileMutation({
   args: profileInputFields,
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { profile } = ctx;
+    const { user, profile } = ctx;
     const input = validateProfileInput(args);
+    const previous = profile.avatarStorageId;
+    if (input.avatarStorageId && input.avatarStorageId !== previous) {
+      await claimAvatar(ctx, user._id, input.avatarStorageId);
+      if (previous) await deleteAvatar(ctx, user._id, previous);
+    }
     await ctx.db.patch("profiles", profile._id, input);
     return null;
   },
+});
+
+/** Upload URL for an avatar; pass the returned storage id to `create` / `update`. */
+export const generateAvatarUploadUrl = userMutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => ctx.storage.generateUploadUrl(),
 });
 
 export const mine = profileQuery({

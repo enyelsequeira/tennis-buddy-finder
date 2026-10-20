@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { ageOn } from "./model/time";
-import { createUser, NOW, setup } from "./test.helpers";
+import { createUser, NOW, setup, type T } from "./test.helpers";
 
 const validInput = {
   displayName: "Ana",
@@ -138,5 +139,125 @@ describe("profiles.getByUserId", () => {
     await expect(
       viewer.as.query(api.profiles.getByUserId, { userId: other.userId }),
     ).rejects.toThrow("NOT_FOUND");
+  });
+});
+
+/** Stores a file like an upload-URL POST would; convex-test does not record `contentType` itself. */
+function storeFile(t: T, contentType: string, size = 1024) {
+  return t.run(async (ctx) => {
+    const id = await ctx.storage.store(new Blob([new Uint8Array(size)], { type: contentType }));
+    await (ctx.db.patch as (id: Id<"_storage">, value: { contentType: string }) => Promise<void>)(
+      id,
+      { contentType },
+    );
+    return id;
+  });
+}
+
+function storageExists(t: T, id: Id<"_storage">) {
+  return t.run(async (ctx) => (await ctx.db.system.get("_storage", id)) !== null);
+}
+
+describe("profile avatars", () => {
+  it("generateAvatarUploadUrl works before a profile exists", async () => {
+    const t = setup();
+    const u = await createUser(t, { profile: false });
+    const url = await u.as.mutation(api.profiles.generateAvatarUploadUrl, {});
+    expect(url).toMatch(/^https:\/\//);
+  });
+
+  it("create accepts the caller's own image", async () => {
+    const t = setup();
+    const u = await createUser(t, { profile: false });
+    const avatarStorageId = await storeFile(t, "image/png");
+    await u.as.mutation(api.profiles.create, { ...validInput, avatarStorageId });
+    const mine = await u.as.query(api.profiles.mine, {});
+    expect(mine.avatarStorageId).toBe(avatarStorageId);
+  });
+
+  it("rejects another user's avatar on create and update", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const avatarStorageId = await storeFile(t, "image/jpeg");
+    await owner.as.mutation(api.profiles.update, { ...validInput, avatarStorageId });
+
+    const newcomer = await createUser(t, { profile: false });
+    await expect(
+      newcomer.as.mutation(api.profiles.create, { ...validInput, avatarStorageId }),
+    ).rejects.toThrow("FORBIDDEN");
+    const other = await createUser(t);
+    await expect(
+      other.as.mutation(api.profiles.update, { ...validInput, avatarStorageId }),
+    ).rejects.toThrow("FORBIDDEN");
+  });
+
+  it("rejects a non-image file", async () => {
+    const t = setup();
+    const u = await createUser(t, { profile: false });
+    const avatarStorageId = await storeFile(t, "application/pdf");
+    await expect(
+      u.as.mutation(api.profiles.create, { ...validInput, avatarStorageId }),
+    ).rejects.toThrow("INVALID_AVATAR");
+  });
+
+  it("rejects an image over 2 MB", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const avatarStorageId = await storeFile(t, "image/webp", 2 * 1024 * 1024 + 1);
+    await expect(
+      u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId }),
+    ).rejects.toThrow("INVALID_AVATAR");
+  });
+
+  it("rejects a storage id whose file no longer exists", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const avatarStorageId = await storeFile(t, "image/png");
+    await t.run(async (ctx) => ctx.storage.delete(avatarStorageId));
+    await expect(
+      u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId }),
+    ).rejects.toThrow("INVALID_AVATAR");
+  });
+
+  it("update replaces the avatar and deletes the old file", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const first = await storeFile(t, "image/png");
+    const second = await storeFile(t, "image/png");
+    await u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId: first });
+    await u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId: second });
+
+    expect((await u.as.query(api.profiles.mine, {})).avatarStorageId).toBe(second);
+    expect(await storageExists(t, first)).toBe(false);
+    expect(await storageExists(t, second)).toBe(true);
+  });
+
+  it("update does not delete a previous avatar the caller never claimed", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const unclaimed = await storeFile(t, "image/png");
+    await t.run(async (ctx) => {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", u.userId))
+        .unique();
+      await ctx.db.patch("profiles", profile!._id, { avatarStorageId: unclaimed });
+    });
+    const avatarStorageId = await storeFile(t, "image/png");
+    await u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId });
+
+    expect(await storageExists(t, unclaimed)).toBe(true);
+  });
+
+  it("update keeps the avatar when it is resent or omitted", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const avatarStorageId = await storeFile(t, "image/png");
+    await u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId });
+    await u.as.mutation(api.profiles.update, { ...validInput, avatarStorageId });
+    await u.as.mutation(api.profiles.update, validInput);
+
+    expect((await u.as.query(api.profiles.mine, {})).avatarStorageId).toBe(avatarStorageId);
+    expect(await storageExists(t, avatarStorageId)).toBe(true);
   });
 });
