@@ -105,6 +105,32 @@ describe("profiles.getByUserId", () => {
     expect(p.age).toBe(36);
   });
 
+  it("returns only the public card, without birthDate, gender or profile ids", async () => {
+    const t = setup();
+    const viewer = await createUser(t);
+    const other = await createUser(t);
+    await other.as.mutation(api.profiles.update, {
+      ...validInput,
+      gender: "female",
+      bio: "Saque e volei",
+      handedness: "left",
+    });
+    const p = await viewer.as.query(api.profiles.getByUserId, { userId: other.userId });
+    expect(p).toEqual({
+      userId: other.userId,
+      displayName: "Ana",
+      age: 36,
+      ntrp: 3.5,
+      yearsPlaying: 4,
+      formats: "both",
+      languages: ["pt"],
+      municipality: "Figueira da Foz",
+      district: "Coimbra",
+      handedness: "left",
+      bio: "Saque e volei",
+    });
+  });
+
   it("throws NOT_FOUND for a user without profile", async () => {
     const t = setup();
     const viewer = await createUser(t);
