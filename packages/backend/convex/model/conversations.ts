@@ -6,7 +6,7 @@ import { isHiddenFrom } from "./blocks";
 import { fail } from "./errors";
 import { unreadNotifications } from "./notifications";
 
-type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
+export type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
 
 /** Unread notifications scanned when looking for a conversation's message notification. */
 const MAX_NOTIFICATIONS_SCANNED = 200;

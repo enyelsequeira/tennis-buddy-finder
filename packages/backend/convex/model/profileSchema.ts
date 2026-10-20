@@ -5,7 +5,7 @@ import { ageOn, MIN_AGE, parseIsoDate } from "./time";
 /** NTRP ratings offered in the UI: 1.0 to 7.0 in 0.5 steps. */
 export const NTRP_VALUES: readonly number[] = Array.from({ length: 13 }, (_, i) => 1 + i * 0.5);
 
-const LANGUAGE_CODE = /^[a-z]{2}$/;
+export const LANGUAGE_CODE = /^[a-z]{2}$/;
 
 /**
  * Client-side mirror of `validateProfileInput` in `../profiles.ts`. The Nuxt

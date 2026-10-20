@@ -2,6 +2,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
 import type { Ctx } from "./auth";
+import type { Pair } from "./conversations";
 import { createNotification } from "./notifications";
 
 const MAX_PENDING = 100;
@@ -46,8 +47,6 @@ export async function declinePendingForSlot(ctx: MutationCtx, options: DeclineOp
     if (request._id !== options.except) await declineRequest(ctx, request);
   }
 }
-
-type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
 
 /** Cancels pending requests between two users in both directions, without notifying anyone. */
 export async function cancelPendingBetween(ctx: MutationCtx, pair: Pair) {

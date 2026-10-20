@@ -2,7 +2,7 @@ import type { MutationCtx } from "../_generated/server";
 
 import type { Ctx } from "./auth";
 
-export type AuthUserInput = {
+type AuthUserInput = {
   /** Better Auth user id (`identity.subject`). */
   authId: string;
   email: string;

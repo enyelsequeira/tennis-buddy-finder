@@ -1,11 +1,12 @@
 import { doc } from "convex-helpers/validators";
-import { v } from "convex/values";
+import { v, type ObjectType } from "convex/values";
 
 import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getCurrentProfile, getCurrentUser, getProfileForUser } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
+import { LANGUAGE_CODE } from "./model/profileSchema";
 import { ageOn, MIN_AGE, parseIsoDate } from "./model/time";
 import {
   formatsValidator,
@@ -29,18 +30,7 @@ const profileInputFields = {
   languages: v.array(v.string()),
 };
 
-type ProfileInput = {
-  displayName: string;
-  bio?: string;
-  avatarStorageId?: Doc<"profiles">["avatarStorageId"];
-  birthDate: string;
-  gender?: Doc<"profiles">["gender"];
-  ntrp: number;
-  yearsPlaying: number;
-  formats: Doc<"profiles">["formats"];
-  handedness?: Doc<"profiles">["handedness"];
-  languages: string[];
-};
+type ProfileInput = ObjectType<typeof profileInputFields>;
 
 function validateProfileInput(input: ProfileInput) {
   const name = input.displayName.trim();
@@ -52,7 +42,7 @@ function validateProfileInput(input: ProfileInput) {
   if (!Number.isInteger(input.yearsPlaying) || input.yearsPlaying < 0 || input.yearsPlaying > 90) {
     fail("INVALID_YEARS_PLAYING");
   }
-  if (input.languages.length === 0 || input.languages.some((l) => !/^[a-z]{2}$/.test(l))) {
+  if (input.languages.length === 0 || input.languages.some((l) => !LANGUAGE_CODE.test(l))) {
     fail("INVALID_LANGUAGES");
   }
   return { ...input, displayName: name };
