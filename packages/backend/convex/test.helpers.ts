@@ -5,8 +5,7 @@ import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
 
-export const HOUR = 60 * 60 * 1000;
-export const DAY = 24 * HOUR;
+export { DAY, HOUR } from "./model/time";
 /** 2026-09-08T12:00:00.000Z, a Tuesday. */
 export const NOW = Date.UTC(2026, 8, 8, 12, 0, 0);
 

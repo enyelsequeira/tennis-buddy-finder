@@ -3,9 +3,8 @@ import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 import { createNotification } from "./model/notifications";
 import { latestRequest } from "./model/requests";
-import { DAY } from "./model/time";
+import { DAY, HOUR } from "./model/time";
 
-const HOUR = DAY / 24;
 const SEED_PREFIX = "seed:";
 
 // `slotHour` is UTC; each player gets one slot at that hour on every day in DAY_OFFSETS.

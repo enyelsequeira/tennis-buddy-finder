@@ -1,5 +1,5 @@
 const MINUTE = 60 * 1000;
-const HOUR = 60 * MINUTE;
+export const HOUR = 60 * MINUTE;
 export const DAY = 24 * HOUR;
 export const SLOT_STEP_MS = 30 * MINUTE;
 export const MAX_SLOT_MS = 6 * HOUR;
