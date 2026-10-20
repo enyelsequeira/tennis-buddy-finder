@@ -1,7 +1,10 @@
-import type { Doc } from "../_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+
+import type { Id } from "../_generated/dataModel";
+import { mutation, query, type MutationCtx, type QueryCtx } from "../_generated/server";
 
 import { fail } from "./errors";
+import { getUserByAuthId } from "./users";
 
 export type Ctx = QueryCtx | MutationCtx;
 
@@ -12,15 +15,12 @@ export type Ctx = QueryCtx | MutationCtx;
 export async function getCurrentUser(ctx: Ctx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) fail("UNAUTHENTICATED");
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_authId", (q) => q.eq("authId", identity.subject))
-    .unique();
+  const user = await getUserByAuthId(ctx, identity.subject);
   if (!user || user.bannedAt !== undefined) fail("UNAUTHENTICATED");
   return user;
 }
 
-export async function getProfileForUser(ctx: Ctx, userId: Doc<"users">["_id"]) {
+export async function getProfileForUser(ctx: Ctx, userId: Id<"users">) {
   return ctx.db
     .query("profiles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -33,3 +33,23 @@ export async function getCurrentProfile(ctx: Ctx) {
   if (!profile) fail("PROFILE_REQUIRED");
   return { user, profile };
 }
+
+/** `query` / `mutation` whose handler gets the signed-in caller as `ctx.user`. */
+export const userQuery = customQuery(
+  query,
+  customCtx(async (ctx) => ({ user: await getCurrentUser(ctx) })),
+);
+export const userMutation = customMutation(
+  mutation,
+  customCtx(async (ctx) => ({ user: await getCurrentUser(ctx) })),
+);
+
+/** Like `userQuery` / `userMutation`, plus the caller's `ctx.profile` (PROFILE_REQUIRED without one). */
+export const profileQuery = customQuery(
+  query,
+  customCtx(async (ctx) => getCurrentProfile(ctx)),
+);
+export const profileMutation = customMutation(
+  mutation,
+  customCtx(async (ctx) => getCurrentProfile(ctx)),
+);

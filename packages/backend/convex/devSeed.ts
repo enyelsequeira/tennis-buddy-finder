@@ -2,9 +2,10 @@ import { v } from "convex/values";
 
 import { internalMutation } from "./_generated/server";
 import { createNotification } from "./model/notifications";
-import { DAY } from "./model/time";
+import { latestRequest } from "./model/requests";
+import { DAY, HOUR } from "./model/time";
+import { LAUNCH_DISTRICT, LAUNCH_MUNICIPALITY } from "./model/validators";
 
-const HOUR = DAY / 24;
 const SEED_PREFIX = "seed:";
 
 // `slotHour` is UTC; each player gets one slot at that hour on every day in DAY_OFFSETS.
@@ -72,8 +73,8 @@ export const demoPlayers = internalMutation({
         ntrp: player.ntrp,
         yearsPlaying: player.yearsPlaying,
         formats: "both",
-        district: "Coimbra",
-        municipality: "Figueira da Foz",
+        district: LAUNCH_DISTRICT,
+        municipality: LAUNCH_MUNICIPALITY,
         languages: ["pt", "en"],
       });
       for (const offset of DAY_OFFSETS) {
@@ -82,8 +83,8 @@ export const demoPlayers = internalMutation({
           userId,
           startAt,
           endAt: startAt + 1.5 * HOUR,
-          district: "Coimbra",
-          municipality: "Figueira da Foz",
+          district: LAUNCH_DISTRICT,
+          municipality: LAUNCH_MUNICIPALITY,
           status: "open",
         });
       }
@@ -99,13 +100,7 @@ export const demoPlayers = internalMutation({
         .take(20);
       const slot = slots.find((candidate) => candidate.status === "open");
       if (!slot) continue;
-      const latest = await ctx.db
-        .query("matchRequests")
-        .withIndex("by_slotId_and_fromUserId", (q) =>
-          q.eq("slotId", slot._id).eq("fromUserId", requester),
-        )
-        .order("desc")
-        .first();
+      const latest = await latestRequest(ctx, slot._id, requester);
       if (latest?.status === "pending") continue;
       const requestId = await ctx.db.insert("matchRequests", {
         slotId: slot._id,

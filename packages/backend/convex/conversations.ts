@@ -1,13 +1,13 @@
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
 import { slotDoc } from "./availability";
-import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
+import { getProfileForUser, profileMutation, profileQuery, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import {
   clearMessageNotifications,
   getMemberConversation,
+  latestMessage,
   otherMemberId,
   unreadMessages,
 } from "./model/conversations";
@@ -47,11 +47,11 @@ async function latestMatchedSlot(ctx: Ctx, conversationId: Id<"conversations">) 
   return latest ? ctx.db.get("availabilitySlots", latest.slotId) : null;
 }
 
-export const list = query({
+export const list = profileQuery({
   args: {},
   returns: v.array(conversationSummary),
   handler: async (ctx) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const memberships = await ctx.db
       .query("conversationMembers")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
@@ -66,11 +66,7 @@ export const list = query({
       if (await isHiddenFrom(ctx, user._id, otherUserId)) continue;
 
       const profile = await getProfileForUser(ctx, otherUserId);
-      const last = await ctx.db
-        .query("messages")
-        .withIndex("by_conversationId", (q) => q.eq("conversationId", conversation._id))
-        .order("desc")
-        .first();
+      const last = await latestMessage(ctx, conversation._id);
       const unread = await unreadMessages(ctx, {
         conversationId: conversation._id,
         userId: user._id,
@@ -97,7 +93,7 @@ export const list = query({
   },
 });
 
-export const get = query({
+export const get = profileQuery({
   args: { conversationId: v.id("conversations") },
   returns: v.object({
     conversationId: v.id("conversations"),
@@ -106,7 +102,7 @@ export const get = query({
     slot: v.union(slotDoc, v.null()),
   }),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const { conversation, otherUserId } = await getMemberConversation(ctx, {
       conversationId: args.conversationId,
       userId: user._id,
@@ -121,20 +117,16 @@ export const get = query({
   },
 });
 
-export const markRead = mutation({
+export const markRead = profileMutation({
   args: { conversationId: v.id("conversations") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const { membership } = await getMemberConversation(ctx, {
       conversationId: args.conversationId,
       userId: user._id,
     });
-    const newest = await ctx.db
-      .query("messages")
-      .withIndex("by_conversationId", (q) => q.eq("conversationId", args.conversationId))
-      .order("desc")
-      .first();
+    const newest = await latestMessage(ctx, args.conversationId);
     // Only write when something is unread, so an open thread does not churn its own queries.
     if (newest && newest._creationTime > (membership.lastReadAt ?? 0)) {
       await ctx.db.patch("conversationMembers", membership._id, {

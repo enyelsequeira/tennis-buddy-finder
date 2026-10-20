@@ -1,8 +1,12 @@
+import type { ErrorCode } from "@tennis-buddy-finder/backend/convex/model/errors";
 import { ConvexError } from "convex/values";
 
 /** The string code a Convex function failed with (`fail("CODE")` in the backend), else "generic". */
-export function convexErrorCode(error: unknown) {
-  return error instanceof ConvexError && typeof error.data === "string" ? error.data : "generic";
+export function convexErrorCode(error: unknown): ErrorCode | "generic" {
+  // Type-only cast: `fail` throws only `ErrorCode`s; the string is not checked at runtime.
+  return error instanceof ConvexError && typeof error.data === "string"
+    ? (error.data as ErrorCode)
+    : "generic";
 }
 
 /** Looks the error's code up in a code-to-i18n-key table; unknown codes give "generic". */

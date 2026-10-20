@@ -72,6 +72,10 @@ Shared helpers that are not registered functions go in `convex/model/` (e.g. `co
 - Imports: `query|mutation|action|internalQuery|internalMutation|internalAction|httpAction` from
   `./_generated/server`; `api|internal` from `./_generated/api`; `v` from `convex/values`;
   `Doc`/`Id` types from `./_generated/dataModel`.
+- **Authenticated public functions use `userQuery`/`userMutation` (ctx.user) or
+  `profileQuery`/`profileMutation` (ctx.user + ctx.profile) from `./model/auth`**, not plain
+  `query`/`mutation`. They run `getCurrentUser`/`getCurrentProfile` before the handler.
+- Throw client-facing errors with `fail(code)` from `./model/errors`; add new codes to `ERROR_CODES`.
 - **Default to internal.** `query`/`mutation`/`action` only for things `apps/web` calls directly.
   Scheduled callbacks, helpers, and admin ops are `internal*`.
 - `ctx.runQuery` / `ctx.runMutation` / `ctx.runAction` and `ctx.scheduler.runAfter` take function
@@ -112,7 +116,7 @@ export const listByDistrict = query({
 
 ## Auth
 
-- Any protected function: `const identity = await ctx.auth.getUserIdentity(); if (!identity) throw ...`.
+- Any protected function: use the builders above (they call `ctx.auth.getUserIdentity()` for you).
   Identity comes from `ctx.auth`, never from a `userId` arg.
 - The `users` table is keyed by `authId` (the auth provider's user id, i.e. `identity.subject`) with
   `.index("by_authId", ["authId"])`. Resolve the caller through a shared helper in `convex/model/auth.ts`:

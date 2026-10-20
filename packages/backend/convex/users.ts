@@ -1,29 +1,28 @@
-import { doc } from "convex-helpers/validators";
 import { v } from "convex/values";
 
-import { internalMutation, mutation, query } from "./_generated/server";
-import { getCurrentUser, getProfileForUser } from "./model/auth";
+import { internalMutation } from "./_generated/server";
+import { getProfileForUser, userMutation, userQuery } from "./model/auth";
 import { createUserFromAuth } from "./model/users";
 import schema from "./schema";
 
-export const me = query({
+export const me = userQuery({
   args: {},
   returns: v.object({
-    user: doc(schema, "users"),
-    profile: v.union(doc(schema, "profiles"), v.null()),
+    user: schema.doc("users"),
+    profile: v.union(schema.doc("profiles"), v.null()),
   }),
   handler: async (ctx) => {
-    const user = await getCurrentUser(ctx);
+    const { user } = ctx;
     const profile = await getProfileForUser(ctx, user._id);
     return { user, profile };
   },
 });
 
-export const setEmailNotifications = mutation({
+export const setEmailNotifications = userMutation({
   args: { enabled: v.boolean() },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
+    const { user } = ctx;
     await ctx.db.patch("users", user._id, { emailNotifications: args.enabled });
     return null;
   },

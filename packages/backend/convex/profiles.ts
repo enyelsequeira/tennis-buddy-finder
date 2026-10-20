@@ -1,18 +1,19 @@
-import { doc } from "convex-helpers/validators";
-import { v } from "convex/values";
+import { v, type ObjectType } from "convex/values";
 
 import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { getCurrentProfile, getCurrentUser, getProfileForUser } from "./model/auth";
+import { getProfileForUser, profileMutation, profileQuery, userMutation } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
+import { LANGUAGE_CODE } from "./model/profileSchema";
 import { ageOn, MIN_AGE, parseIsoDate } from "./model/time";
-import { formatsValidator, genderValidator, handednessValidator } from "./model/validators";
+import {
+  formatsValidator,
+  genderValidator,
+  handednessValidator,
+  LAUNCH_DISTRICT,
+  LAUNCH_MUNICIPALITY,
+} from "./model/validators";
 import schema from "./schema";
-
-/** Launch scope: one municipality. Widen when the picker ships. */
-const LAUNCH_DISTRICT = "Coimbra";
-const LAUNCH_MUNICIPALITY = "Figueira da Foz";
 
 const profileInputFields = {
   displayName: v.string(),
@@ -27,18 +28,7 @@ const profileInputFields = {
   languages: v.array(v.string()),
 };
 
-type ProfileInput = {
-  displayName: string;
-  bio?: string;
-  avatarStorageId?: Doc<"profiles">["avatarStorageId"];
-  birthDate: string;
-  gender?: Doc<"profiles">["gender"];
-  ntrp: number;
-  yearsPlaying: number;
-  formats: Doc<"profiles">["formats"];
-  handedness?: Doc<"profiles">["handedness"];
-  languages: string[];
-};
+type ProfileInput = ObjectType<typeof profileInputFields>;
 
 function validateProfileInput(input: ProfileInput) {
   const name = input.displayName.trim();
@@ -50,28 +40,23 @@ function validateProfileInput(input: ProfileInput) {
   if (!Number.isInteger(input.yearsPlaying) || input.yearsPlaying < 0 || input.yearsPlaying > 90) {
     fail("INVALID_YEARS_PLAYING");
   }
-  if (input.languages.length === 0 || input.languages.some((l) => !/^[a-z]{2}$/.test(l))) {
+  if (input.languages.length === 0 || input.languages.some((l) => !LANGUAGE_CODE.test(l))) {
     fail("INVALID_LANGUAGES");
   }
   return { ...input, displayName: name };
 }
 
-const profileWithAge = v.object({
-  ...schema.tables.profiles.validator.fields,
-  _id: v.id("profiles"),
-  _creationTime: v.number(),
-  age: v.number(),
-});
+const profileWithAge = schema.doc("profiles").extend({ age: v.number() });
 
 function withAge(profile: Doc<"profiles">) {
   return { ...profile, age: ageOn(profile.birthDate, Date.now()) };
 }
 
-export const create = mutation({
+export const create = userMutation({
   args: profileInputFields,
   returns: v.id("profiles"),
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
+    const { user } = ctx;
     const existing = await getProfileForUser(ctx, user._id);
     if (existing) fail("PROFILE_EXISTS");
     const input = validateProfileInput(args);
@@ -84,31 +69,31 @@ export const create = mutation({
   },
 });
 
-export const update = mutation({
+export const update = profileMutation({
   args: profileInputFields,
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { profile } = await getCurrentProfile(ctx);
+    const { profile } = ctx;
     const input = validateProfileInput(args);
     await ctx.db.patch("profiles", profile._id, input);
     return null;
   },
 });
 
-export const mine = query({
+export const mine = profileQuery({
   args: {},
-  returns: doc(schema, "profiles"),
+  returns: schema.doc("profiles"),
   handler: async (ctx) => {
-    const { profile } = await getCurrentProfile(ctx);
+    const { profile } = ctx;
     return profile;
   },
 });
 
-export const getByUserId = query({
+export const getByUserId = profileQuery({
   args: { userId: v.id("users") },
   returns: profileWithAge,
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     if (await isHiddenFrom(ctx, user._id, args.userId)) fail("NOT_FOUND");
     const profile = await getProfileForUser(ctx, args.userId);
     if (!profile) fail("NOT_FOUND");

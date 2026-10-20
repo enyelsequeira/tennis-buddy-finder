@@ -47,8 +47,16 @@ describe("blocks", () => {
       Promise.all([fromB, fromA, fromC].map((id) => ctx.db.get("matchRequests", id))),
     );
     expect(rows.map((r) => r?.status)).toEqual(["cancelled", "cancelled", "pending"]);
-    const notes = await b.as.query(api.notifications.unread, {});
+    // Blocking notifies nobody: b keeps only the row from a's earlier request.
+    const notes = await t.run(async (ctx) =>
+      ctx.db
+        .query("notifications")
+        .withIndex("by_userId", (q) => q.eq("userId", b.userId))
+        .take(10),
+    );
     expect(notes.map((n) => n.type)).toEqual(["request_received"]);
+    // ...and it is hidden from b now, as a looks like they do not exist.
+    expect(await b.as.query(api.notifications.unread, {})).toEqual([]);
   });
 
   it("unblock removes the block", async () => {

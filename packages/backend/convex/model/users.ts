@@ -1,6 +1,8 @@
-import type { MutationCtx, QueryCtx } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 
-export type AuthUserInput = {
+import type { Ctx } from "./auth";
+
+type AuthUserInput = {
   /** Better Auth user id (`identity.subject`). */
   authId: string;
   email: string;
@@ -9,7 +11,7 @@ export type AuthUserInput = {
 };
 
 /** Looks up the app `users` row mirroring a Better Auth user id. */
-export async function getUserByAuthId(ctx: QueryCtx | MutationCtx, authId: string) {
+export async function getUserByAuthId(ctx: Ctx, authId: string) {
   return ctx.db
     .query("users")
     .withIndex("by_authId", (q) => q.eq("authId", authId))

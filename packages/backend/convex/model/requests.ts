@@ -1,6 +1,8 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
+import type { Ctx } from "./auth";
+import type { Pair } from "./conversations";
 import { createNotification } from "./notifications";
 
 const MAX_PENDING = 100;
@@ -17,6 +19,21 @@ export async function declineRequest(ctx: MutationCtx, request: Doc<"matchReques
   });
 }
 
+/** `fromUserId`'s newest request on a slot; only that one can be pending. */
+export async function latestRequest(
+  ctx: Ctx,
+  slotId: Id<"availabilitySlots">,
+  fromUserId: Id<"users">,
+) {
+  return ctx.db
+    .query("matchRequests")
+    .withIndex("by_slotId_and_fromUserId", (q) =>
+      q.eq("slotId", slotId).eq("fromUserId", fromUserId),
+    )
+    .order("desc")
+    .first();
+}
+
 type DeclineOptions = { slotId: Id<"availabilitySlots">; except?: Id<"matchRequests"> };
 
 export async function declinePendingForSlot(ctx: MutationCtx, options: DeclineOptions) {
@@ -30,8 +47,6 @@ export async function declinePendingForSlot(ctx: MutationCtx, options: DeclineOp
     if (request._id !== options.except) await declineRequest(ctx, request);
   }
 }
-
-type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
 
 /** Cancels pending requests between two users in both directions, without notifying anyone. */
 export async function cancelPendingBetween(ctx: MutationCtx, pair: Pair) {

@@ -4,8 +4,9 @@ import type { MutationCtx } from "../_generated/server";
 import type { Ctx } from "./auth";
 import { isHiddenFrom } from "./blocks";
 import { fail } from "./errors";
+import { unreadNotifications } from "./notifications";
 
-type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
+export type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
 
 /** Unread notifications scanned when looking for a conversation's message notification. */
 const MAX_NOTIFICATIONS_SCANNED = 200;
@@ -81,18 +82,21 @@ export async function unreadMessages(ctx: Ctx, options: UnreadOptions) {
   return rows.filter((row) => row.senderId !== options.userId);
 }
 
+/** The newest message in a conversation, if any. */
+export async function latestMessage(ctx: Ctx, conversationId: Id<"conversations">) {
+  return ctx.db
+    .query("messages")
+    .withIndex("by_conversationId", (q) => q.eq("conversationId", conversationId))
+    .order("desc")
+    .first();
+}
+
 /** Unread `new_message` notifications of `userId` for one conversation. */
 export async function unreadMessageNotifications(
   ctx: Ctx,
   options: { userId: Id<"users">; conversationId: Id<"conversations"> },
 ) {
-  const rows = await ctx.db
-    .query("notifications")
-    .withIndex("by_userId_and_readAt", (q) =>
-      q.eq("userId", options.userId).eq("readAt", undefined),
-    )
-    .order("desc")
-    .take(MAX_NOTIFICATIONS_SCANNED);
+  const rows = await unreadNotifications(ctx, options.userId, MAX_NOTIFICATIONS_SCANNED);
   return rows.filter(
     (row) => row.type === "new_message" && row.conversationId === options.conversationId,
   );
