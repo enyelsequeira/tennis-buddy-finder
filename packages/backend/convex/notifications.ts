@@ -1,8 +1,7 @@
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { getCurrentUser, type Ctx } from "./model/auth";
+import { userMutation, userQuery, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { otherMemberId } from "./model/conversations";
 import { fail } from "./model/errors";
@@ -28,11 +27,11 @@ async function counterpartOf(ctx: Ctx, row: Doc<"notifications">) {
   return null;
 }
 
-export const unread = query({
+export const unread = userQuery({
   args: {},
   returns: v.array(schema.doc("notifications")),
   handler: async (ctx) => {
-    const me = await getCurrentUser(ctx);
+    const me = ctx.user;
     const rows = await unreadNotifications(ctx, me._id, MAX_UNREAD_SCANNED);
     // Rows about a banned or blocked player are not shown, as their request or chat looks
     // like it does not exist. They stay unread and come back if that changes, unless
@@ -54,11 +53,11 @@ export const unread = query({
   },
 });
 
-export const markAllRead = mutation({
+export const markAllRead = userMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const me = await getCurrentUser(ctx);
+    const me = ctx.user;
     const readAt = Date.now();
     // Newest first, so the ones `unread` shows are always among those marked.
     const rows = await unreadNotifications(ctx, me._id, MAX_MARKED_PER_CALL);
@@ -67,11 +66,11 @@ export const markAllRead = mutation({
   },
 });
 
-export const markRead = mutation({
+export const markRead = userMutation({
   args: { notificationId: v.id("notifications") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const me = await getCurrentUser(ctx);
+    const me = ctx.user;
     const row = await ctx.db.get("notifications", args.notificationId);
     if (!row) fail("NOT_FOUND");
     if (row.userId !== me._id) fail("FORBIDDEN");

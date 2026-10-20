@@ -2,8 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v, type Infer } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
+import { getProfileForUser, profileMutation, profileQuery, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
 import { createNotification } from "./model/notifications";
@@ -43,15 +42,14 @@ async function hasOverlap(ctx: Ctx, slot: SlotRange & { userId: Id<"users"> }) {
   return candidates.some((other) => other.status !== "cancelled" && other.endAt > slot.startAt);
 }
 
-async function getOwnSlot(ctx: Ctx, slotId: Id<"availabilitySlots">) {
-  const { user } = await getCurrentProfile(ctx);
+async function getOwnSlot(ctx: Ctx, userId: Id<"users">, slotId: Id<"availabilitySlots">) {
   const slot = await ctx.db.get("availabilitySlots", slotId);
   if (!slot) fail("NOT_FOUND");
-  if (slot.userId !== user._id) fail("FORBIDDEN");
+  if (slot.userId !== userId) fail("FORBIDDEN");
   return slot;
 }
 
-export const create = mutation({
+export const create = profileMutation({
   args: {
     startAt: v.number(),
     endAt: v.number(),
@@ -60,7 +58,7 @@ export const create = mutation({
   },
   returns: v.id("availabilitySlots"),
   handler: async (ctx, args) => {
-    const { user, profile } = await getCurrentProfile(ctx);
+    const { user, profile } = ctx;
     validateRange(args);
     if (args.note !== undefined && args.note.length > MAX_NOTE) fail("INVALID_NOTE");
     if (args.venueId !== undefined) {
@@ -85,11 +83,11 @@ export const create = mutation({
   },
 });
 
-export const remove = mutation({
+export const remove = profileMutation({
   args: { slotId: v.id("availabilitySlots") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const slot = await getOwnSlot(ctx, args.slotId);
+    const slot = await getOwnSlot(ctx, ctx.user._id, args.slotId);
     if (slot.status !== "open") fail("SLOT_NOT_OPEN");
     await declinePendingForSlot(ctx, { slotId: slot._id });
     await ctx.db.delete("availabilitySlots", slot._id);
@@ -97,11 +95,11 @@ export const remove = mutation({
   },
 });
 
-export const cancel = mutation({
+export const cancel = profileMutation({
   args: { slotId: v.id("availabilitySlots") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const slot = await getOwnSlot(ctx, args.slotId);
+    const slot = await getOwnSlot(ctx, ctx.user._id, args.slotId);
     if (slot.status !== "open" && slot.status !== "matched") fail("SLOT_NOT_OPEN");
     await declinePendingForSlot(ctx, { slotId: slot._id });
     if (slot.status === "matched") {
@@ -126,11 +124,11 @@ export const cancel = mutation({
   },
 });
 
-export const mine = query({
+export const mine = profileQuery({
   args: { from: v.number(), to: v.number() },
   returns: v.array(slotDoc),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     return ctx.db
       .query("availabilitySlots")
       .withIndex("by_userId_and_startAt", (q) =>
@@ -140,11 +138,11 @@ export const mine = query({
   },
 });
 
-export const listOpenForUser = query({
+export const listOpenForUser = profileQuery({
   args: { userId: v.id("users") },
   returns: v.array(slotDoc),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     if (await isHiddenFrom(ctx, user._id, args.userId)) return [];
     const slots = await ctx.db
       .query("availabilitySlots")
@@ -156,11 +154,11 @@ export const listOpenForUser = query({
   },
 });
 
-export const copyLastWeek = mutation({
+export const copyLastWeek = profileMutation({
   args: {},
   returns: v.number(),
   handler: async (ctx) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const now = Date.now();
     // The exclusive lower bound keeps every copy (startAt + 7 days) in the future.
     const lastWeek = await ctx.db
@@ -194,7 +192,7 @@ export const copyLastWeek = mutation({
   },
 });
 
-export const search = query({
+export const search = profileQuery({
   args: {
     from: v.number(),
     to: v.number(),
@@ -206,7 +204,7 @@ export const search = query({
   },
   returns: paginated(v.object({ slot: slotDoc, player: playerCard })),
   handler: async (ctx, args) => {
-    const { user, profile } = await getCurrentProfile(ctx);
+    const { user, profile } = ctx;
     const span = args.to - args.from;
     // Written as a negation so a NaN bound is rejected too.
     if (!(span > 0 && span <= MAX_SEARCH_RANGE)) fail("INVALID_RANGE");

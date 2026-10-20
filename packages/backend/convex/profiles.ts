@@ -1,8 +1,7 @@
 import { v, type ObjectType } from "convex/values";
 
 import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { getCurrentProfile, getCurrentUser, getProfileForUser } from "./model/auth";
+import { getProfileForUser, profileMutation, profileQuery, userMutation } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
 import { LANGUAGE_CODE } from "./model/profileSchema";
@@ -53,11 +52,11 @@ function withAge(profile: Doc<"profiles">) {
   return { ...profile, age: ageOn(profile.birthDate, Date.now()) };
 }
 
-export const create = mutation({
+export const create = userMutation({
   args: profileInputFields,
   returns: v.id("profiles"),
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
+    const { user } = ctx;
     const existing = await getProfileForUser(ctx, user._id);
     if (existing) fail("PROFILE_EXISTS");
     const input = validateProfileInput(args);
@@ -70,31 +69,31 @@ export const create = mutation({
   },
 });
 
-export const update = mutation({
+export const update = profileMutation({
   args: profileInputFields,
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { profile } = await getCurrentProfile(ctx);
+    const { profile } = ctx;
     const input = validateProfileInput(args);
     await ctx.db.patch("profiles", profile._id, input);
     return null;
   },
 });
 
-export const mine = query({
+export const mine = profileQuery({
   args: {},
   returns: schema.doc("profiles"),
   handler: async (ctx) => {
-    const { profile } = await getCurrentProfile(ctx);
+    const { profile } = ctx;
     return profile;
   },
 });
 
-export const getByUserId = query({
+export const getByUserId = profileQuery({
   args: { userId: v.id("users") },
   returns: profileWithAge,
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     if (await isHiddenFrom(ctx, user._id, args.userId)) fail("NOT_FOUND");
     const profile = await getProfileForUser(ctx, args.userId);
     if (!profile) fail("NOT_FOUND");

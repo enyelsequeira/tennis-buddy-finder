@@ -1,9 +1,8 @@
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
 import { slotDoc } from "./availability";
-import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
+import { getProfileForUser, profileMutation, profileQuery, type Ctx } from "./model/auth";
 import { isBanned, isBlockedEitherWay, isHiddenFrom } from "./model/blocks";
 import { getOrCreateConversation } from "./model/conversations";
 import { fail } from "./model/errors";
@@ -22,18 +21,18 @@ const requestView = v.object({
 });
 
 type PendingRequestOptions = {
+  userId: Id<"users">;
   requestId: Id<"matchRequests">;
   /** The side of the request the caller must be on. */
   role: "fromUserId" | "toUserId";
 };
 
-async function getPendingRequest(ctx: Ctx, { requestId, role }: PendingRequestOptions) {
-  const { user } = await getCurrentProfile(ctx);
+async function getPendingRequest(ctx: Ctx, { userId, requestId, role }: PendingRequestOptions) {
   const request = await ctx.db.get("matchRequests", requestId);
   if (!request) fail("NOT_FOUND");
-  if (request[role] !== user._id) fail("FORBIDDEN");
+  if (request[role] !== userId) fail("FORBIDDEN");
   if (request.status !== "pending") fail("REQUEST_NOT_PENDING");
-  return { user, request };
+  return request;
 }
 
 type ViewOptions = {
@@ -54,11 +53,11 @@ async function toViews(ctx: Ctx, { requests, player }: ViewOptions) {
   return views;
 }
 
-export const send = mutation({
+export const send = profileMutation({
   args: { slotId: v.id("availabilitySlots"), message: v.optional(v.string()) },
   returns: v.id("matchRequests"),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     if (args.message !== undefined && args.message.length > MAX_MESSAGE) fail("INVALID_MESSAGE");
     const slot = await ctx.db.get("availabilitySlots", args.slotId);
     // A banned player's slots look like they do not exist.
@@ -82,11 +81,13 @@ export const send = mutation({
   },
 });
 
-export const accept = mutation({
+export const accept = profileMutation({
   args: { requestId: v.id("matchRequests") },
   returns: v.id("conversations"),
   handler: async (ctx, args) => {
-    const { user, request } = await getPendingRequest(ctx, {
+    const { user } = ctx;
+    const request = await getPendingRequest(ctx, {
+      userId: user._id,
       requestId: args.requestId,
       role: "toUserId",
     });
@@ -116,11 +117,12 @@ export const accept = mutation({
   },
 });
 
-export const decline = mutation({
+export const decline = profileMutation({
   args: { requestId: v.id("matchRequests") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { request } = await getPendingRequest(ctx, {
+    const request = await getPendingRequest(ctx, {
+      userId: ctx.user._id,
       requestId: args.requestId,
       role: "toUserId",
     });
@@ -129,11 +131,12 @@ export const decline = mutation({
   },
 });
 
-export const cancel = mutation({
+export const cancel = profileMutation({
   args: { requestId: v.id("matchRequests") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { request } = await getPendingRequest(ctx, {
+    const request = await getPendingRequest(ctx, {
+      userId: ctx.user._id,
       requestId: args.requestId,
       role: "fromUserId",
     });
@@ -145,11 +148,11 @@ export const cancel = mutation({
   },
 });
 
-export const received = query({
+export const received = profileQuery({
   args: {},
   returns: v.array(requestView),
   handler: async (ctx) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const requests = await ctx.db
       .query("matchRequests")
       .withIndex("by_toUserId_and_status", (q) =>
@@ -161,11 +164,11 @@ export const received = query({
   },
 });
 
-export const sent = query({
+export const sent = profileQuery({
   args: {},
   returns: v.array(requestView),
   handler: async (ctx) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const requests = [];
     for (const status of ["pending", "accepted", "declined"] as const) {
       const rows = await ctx.db

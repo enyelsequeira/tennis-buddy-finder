@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
-import { internalMutation, query } from "./_generated/server";
-import { getCurrentProfile } from "./model/auth";
+import { internalMutation } from "./_generated/server";
+import { profileQuery } from "./model/auth";
 import { LAUNCH_DISTRICT, LAUNCH_MUNICIPALITY } from "./model/validators";
 import schema from "./schema";
 
@@ -14,11 +14,11 @@ const FIGUEIRA_VENUES = [
   { name: "Complexo Desportivo Municipal", surface: "hard" as const },
 ];
 
-export const list = query({
+export const list = profileQuery({
   args: {},
   returns: v.array(schema.doc("venues")),
   handler: async (ctx) => {
-    const { profile } = await getCurrentProfile(ctx);
+    const { profile } = ctx;
     const venues = await ctx.db
       .query("venues")
       .withIndex("by_municipality", (q) => q.eq("municipality", profile.municipality))

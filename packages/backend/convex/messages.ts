@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 
-import { mutation, query } from "./_generated/server";
-import { getCurrentProfile } from "./model/auth";
+import { profileMutation, profileQuery } from "./model/auth";
 import {
   clearMessageNotifications,
   getMemberConversation,
@@ -23,11 +22,11 @@ const messageView = v.object({
   mine: v.boolean(),
 });
 
-export const list = query({
+export const list = profileQuery({
   args: { conversationId: v.id("conversations"), limit: v.number() },
   returns: v.object({ messages: v.array(messageView), hasMore: v.boolean() }),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     await getMemberConversation(ctx, { conversationId: args.conversationId, userId: user._id });
     if (!Number.isFinite(args.limit)) fail("INVALID_LIMIT");
     const limit = Math.max(1, Math.min(MAX_LIMIT, Math.floor(args.limit)));
@@ -52,11 +51,11 @@ export const list = query({
   },
 });
 
-export const send = mutation({
+export const send = profileMutation({
   args: { conversationId: v.id("conversations"), body: v.string() },
   returns: v.id("messages"),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const body = args.body.trim();
     if (body.length === 0 || body.length > MAX_MESSAGE_LENGTH) fail("INVALID_MESSAGE");
     const { conversation, membership, otherUserId } = await getMemberConversation(ctx, {

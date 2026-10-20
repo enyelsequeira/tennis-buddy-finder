@@ -1,9 +1,8 @@
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
 import { slotDoc } from "./availability";
-import { getCurrentProfile, getProfileForUser, type Ctx } from "./model/auth";
+import { getProfileForUser, profileMutation, profileQuery, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import {
   clearMessageNotifications,
@@ -48,11 +47,11 @@ async function latestMatchedSlot(ctx: Ctx, conversationId: Id<"conversations">) 
   return latest ? ctx.db.get("availabilitySlots", latest.slotId) : null;
 }
 
-export const list = query({
+export const list = profileQuery({
   args: {},
   returns: v.array(conversationSummary),
   handler: async (ctx) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const memberships = await ctx.db
       .query("conversationMembers")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
@@ -94,7 +93,7 @@ export const list = query({
   },
 });
 
-export const get = query({
+export const get = profileQuery({
   args: { conversationId: v.id("conversations") },
   returns: v.object({
     conversationId: v.id("conversations"),
@@ -103,7 +102,7 @@ export const get = query({
     slot: v.union(slotDoc, v.null()),
   }),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const { conversation, otherUserId } = await getMemberConversation(ctx, {
       conversationId: args.conversationId,
       userId: user._id,
@@ -118,11 +117,11 @@ export const get = query({
   },
 });
 
-export const markRead = mutation({
+export const markRead = profileMutation({
   args: { conversationId: v.id("conversations") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { user } = await getCurrentProfile(ctx);
+    const { user } = ctx;
     const { membership } = await getMemberConversation(ctx, {
       conversationId: args.conversationId,
       userId: user._id,
