@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser, getProfileForUser } from "./model/auth";
-import { isBanned } from "./model/blocks";
+import { getBlock, isBanned } from "./model/blocks";
 import { fail } from "./model/errors";
 import { cancelPendingBetween } from "./model/requests";
 
@@ -15,12 +15,7 @@ export const block = mutation({
     const target = await ctx.db.get("users", args.userId);
     // A banned player looks like they do not exist, as everywhere else.
     if (!target || target.bannedAt !== undefined) fail("NOT_FOUND");
-    const existing = await ctx.db
-      .query("blocks")
-      .withIndex("by_blockerId_and_blockedId", (q) =>
-        q.eq("blockerId", me._id).eq("blockedId", args.userId),
-      )
-      .unique();
+    const existing = await getBlock(ctx, me._id, args.userId);
     if (!existing) {
       await ctx.db.insert("blocks", { blockerId: me._id, blockedId: args.userId });
     }
@@ -34,12 +29,7 @@ export const unblock = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const me = await getCurrentUser(ctx);
-    const existing = await ctx.db
-      .query("blocks")
-      .withIndex("by_blockerId_and_blockedId", (q) =>
-        q.eq("blockerId", me._id).eq("blockedId", args.userId),
-      )
-      .unique();
+    const existing = await getBlock(ctx, me._id, args.userId);
     if (existing) await ctx.db.delete("blocks", existing._id);
     return null;
   },
