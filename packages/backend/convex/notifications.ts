@@ -7,6 +7,7 @@ import { getCurrentUser, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { otherMemberId } from "./model/conversations";
 import { fail } from "./model/errors";
+import { unreadNotifications } from "./model/notifications";
 import schema from "./schema";
 
 const MAX_UNREAD = 50;
@@ -33,11 +34,7 @@ export const unread = query({
   returns: v.array(doc(schema, "notifications")),
   handler: async (ctx) => {
     const me = await getCurrentUser(ctx);
-    const rows = await ctx.db
-      .query("notifications")
-      .withIndex("by_userId_and_readAt", (q) => q.eq("userId", me._id).eq("readAt", undefined))
-      .order("desc")
-      .take(MAX_UNREAD_SCANNED);
+    const rows = await unreadNotifications(ctx, me._id, MAX_UNREAD_SCANNED);
     // Rows about a banned or blocked player are not shown, as their request or chat looks
     // like it does not exist. They stay unread and come back if that changes, unless
     // `markAllRead` swept them meanwhile.
@@ -65,11 +62,7 @@ export const markAllRead = mutation({
     const me = await getCurrentUser(ctx);
     const readAt = Date.now();
     // Newest first, so the ones `unread` shows are always among those marked.
-    const rows = await ctx.db
-      .query("notifications")
-      .withIndex("by_userId_and_readAt", (q) => q.eq("userId", me._id).eq("readAt", undefined))
-      .order("desc")
-      .take(MAX_MARKED_PER_CALL);
+    const rows = await unreadNotifications(ctx, me._id, MAX_MARKED_PER_CALL);
     for (const row of rows) await ctx.db.patch("notifications", row._id, { readAt });
     return null;
   },

@@ -4,6 +4,7 @@ import type { MutationCtx } from "../_generated/server";
 import type { Ctx } from "./auth";
 import { isHiddenFrom } from "./blocks";
 import { fail } from "./errors";
+import { unreadNotifications } from "./notifications";
 
 type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
 
@@ -86,13 +87,7 @@ export async function unreadMessageNotifications(
   ctx: Ctx,
   options: { userId: Id<"users">; conversationId: Id<"conversations"> },
 ) {
-  const rows = await ctx.db
-    .query("notifications")
-    .withIndex("by_userId_and_readAt", (q) =>
-      q.eq("userId", options.userId).eq("readAt", undefined),
-    )
-    .order("desc")
-    .take(MAX_NOTIFICATIONS_SCANNED);
+  const rows = await unreadNotifications(ctx, options.userId, MAX_NOTIFICATIONS_SCANNED);
   return rows.filter(
     (row) => row.type === "new_message" && row.conversationId === options.conversationId,
   );
