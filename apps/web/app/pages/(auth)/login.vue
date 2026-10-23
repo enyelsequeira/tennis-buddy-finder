@@ -138,7 +138,7 @@ async function signInWith(provider: Provider) {
 
     <template #footer>
       {{ t("auth.login.noAccount") }}
-      <ULink to="/register" class="font-medium text-primary hover:underline">
+      <ULink :to="localePath('/register')" class="font-medium text-primary hover:underline">
         {{ t("auth.login.createOne") }}
       </ULink>
     </template>

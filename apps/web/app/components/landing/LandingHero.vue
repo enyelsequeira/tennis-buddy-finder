@@ -2,9 +2,10 @@
 import type { ButtonProps } from "@nuxt/ui";
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 
 const links = computed<ButtonProps[]>(() => [
-  { label: t("hero.primary"), to: "/register", color: "primary", size: "xl" },
+  { label: t("hero.primary"), to: localePath("/register"), color: "primary", size: "xl" },
   {
     label: t("hero.secondary"),
     to: "#how-it-works",

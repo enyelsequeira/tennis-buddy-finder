@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n();
+const localePath = useLocalePath();
 const route = useRoute();
 const column = computed(() => (route.meta.authWide ? "max-w-[560px]" : "max-w-[400px]"));
 </script>
@@ -15,7 +16,7 @@ const column = computed(() => (route.meta.authWide ? "max-w-[560px]" : "max-w-[4
       >
         <header class="mb-8 flex justify-center lg:justify-start">
           <ULink
-            to="/"
+            :to="localePath('/')"
             :aria-label="t('app.name')"
             class="rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >

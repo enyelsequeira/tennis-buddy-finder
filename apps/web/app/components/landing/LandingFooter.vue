@@ -2,13 +2,14 @@
 import type { NavigationMenuItem } from "@nuxt/ui";
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 const { now, formatYear } = useLisbonTime();
 
 const items = computed<NavigationMenuItem[]>(() => [
-  { label: t("nav.howItWorks"), to: "/#how-it-works", active: false },
-  { label: t("nav.yourLevel"), to: "/#your-level", active: false },
-  { label: t("nav.safety"), to: "/#safety", active: false },
-  { label: t("nav.signIn"), to: "/login" },
+  { label: t("nav.howItWorks"), to: localePath("/#how-it-works"), active: false },
+  { label: t("nav.yourLevel"), to: localePath("/#your-level"), active: false },
+  { label: t("nav.safety"), to: localePath("/#safety"), active: false },
+  { label: t("nav.signIn"), to: localePath("/login") },
 ]);
 
 const year = formatYear(now());

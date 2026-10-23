@@ -11,17 +11,17 @@ const { me } = await useCurrentUser();
 const isActive = (path: string) => route.path.startsWith(localePath(path));
 
 const items = computed<NavigationMenuItem[]>(() => [
-  { label: t("nav.find"), to: "/find", active: isActive("/find") },
-  { label: t("nav.calendar"), to: "/calendar", active: isActive("/calendar") },
+  { label: t("nav.find"), to: localePath("/find"), active: isActive("/find") },
+  { label: t("nav.calendar"), to: localePath("/calendar"), active: isActive("/calendar") },
   {
     label: t("nav.requests"),
-    to: "/requests",
+    to: localePath("/requests"),
     active: isActive("/requests"),
     slot: hasUnreadRequests.value ? "unread" : undefined,
   },
   {
     label: t("nav.messages"),
-    to: "/messages",
+    to: localePath("/messages"),
     active: isActive("/messages"),
     slot: hasUnreadMessages.value ? "unread" : undefined,
   },
@@ -44,7 +44,7 @@ const displayName = computed(() => me.value?.profile?.displayName ?? me.value?.u
 
 <template>
   <UHeader
-    to="/find"
+    :to="localePath('/find')"
     :title="t('app.name')"
     :toggle="false"
     :ui="{ root: 'hidden md:block bg-elevated/90', center: 'flex' }"
@@ -66,7 +66,7 @@ const displayName = computed(() => me.value?.profile?.displayName ?? me.value?.u
     <template #right>
       <LocaleSwitcher class="hidden lg:flex" />
       <UButton
-        to="/calendar"
+        :to="localePath('/calendar')"
         color="secondary"
         icon="i-lucide-plus"
         :label="t('nav.addAvailability')"

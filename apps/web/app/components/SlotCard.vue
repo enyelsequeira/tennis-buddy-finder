@@ -14,6 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{ ask: [slot: SlotSummary] }>();
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 const { formatRange, formatDuration } = useLisbonTime();
 
 const range = computed(() => formatRange(props.slot));
@@ -34,7 +35,7 @@ const duration = computed(() => formatDuration(props.slot));
     <p v-if="hideIdentity" class="text-sm text-muted">{{ slot.venue ?? t("slot.anyVenue") }}</p>
     <ULink
       v-else-if="linkProfile"
-      :to="`/players/${slot.player.id}`"
+      :to="localePath(`/players/${slot.player.id}`)"
       class="block -m-1.5 p-1.5 rounded-lg hover:bg-accented/60"
     >
       <PlayerIdentity :player="slot.player" :venue="slot.venue" />

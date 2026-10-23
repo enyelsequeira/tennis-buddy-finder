@@ -182,7 +182,7 @@ async function confirmBlock() {
           color="neutral"
           variant="outline"
           size="sm"
-          to="/settings"
+          :to="localePath('/settings')"
           class="shrink-0"
         />
       </div>

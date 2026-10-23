@@ -37,7 +37,7 @@ const inThread = computed(() => isActive("/messages") && Boolean(route.params.id
     <ULink
       v-for="tab in tabs"
       :key="tab.to"
-      :to="tab.to"
+      :to="localePath(tab.to)"
       raw
       class="flex flex-col items-center justify-center gap-1 text-[10.5px] font-medium focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
       :class="isActive(tab.to) ? 'text-primary' : 'text-dimmed'"

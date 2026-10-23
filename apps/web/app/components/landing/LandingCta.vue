@@ -2,10 +2,17 @@
 import type { ButtonProps } from "@nuxt/ui";
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 
 const links = computed<ButtonProps[]>(() => [
-  { label: t("nav.createAccount"), to: "/register", color: "primary", size: "xl" },
-  { label: t("nav.signIn"), to: "/login", color: "neutral", variant: "ghost", size: "xl" },
+  { label: t("nav.createAccount"), to: localePath("/register"), color: "primary", size: "xl" },
+  {
+    label: t("nav.signIn"),
+    to: localePath("/login"),
+    color: "neutral",
+    variant: "ghost",
+    size: "xl",
+  },
 ]);
 </script>
 

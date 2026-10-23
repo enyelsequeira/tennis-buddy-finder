@@ -8,6 +8,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 const { formatStamp } = useLisbonTime();
 
 const name = computed(() => props.conversation.player?.displayName ?? t("chat.deletedPlayer"));
@@ -26,7 +27,7 @@ const stamp = computed(() =>
 
 <template>
   <ULink
-    :to="`/messages/${conversation.conversationId}`"
+    :to="localePath(`/messages/${conversation.conversationId}`)"
     raw
     class="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-default focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
     :class="active ? 'bg-primary/10 hover:bg-primary/10' : ''"

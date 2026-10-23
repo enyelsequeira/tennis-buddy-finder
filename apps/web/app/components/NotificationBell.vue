@@ -11,6 +11,7 @@ const ICONS = {
 } satisfies Record<Doc<"notifications">["type"], string>;
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 const { formatShortDay, formatTime } = useLisbonTime();
 const { unread, error } = useUnreadNotifications();
 const { mutate: markAllRead } = useConvexMutation(api.notifications.markAllRead);
@@ -60,7 +61,7 @@ watch([open, unread], async ([isOpen, list], [wasOpen]) => {
       <ul v-else class="divide-y divide-default">
         <li v-for="row in rows" :key="row._id">
           <ULink
-            :to="linkFor(row)"
+            :to="localePath(linkFor(row))"
             class="flex items-start gap-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             @click="open = false"
           >

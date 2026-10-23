@@ -3,6 +3,7 @@ import type { TabsItem } from "@nuxt/ui";
 import { api } from "@tennis-buddy-finder/backend/convex/_generated/api";
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 
 useSeoMeta({ title: () => t("pages.requests.title") });
 
@@ -85,7 +86,7 @@ const venueNames = computed(() => new Map(venues.value?.map((venue) => [venue._i
           icon: 'i-lucide-search',
           color: 'neutral',
           variant: 'outline',
-          to: '/find',
+          to: localePath('/find'),
         },
       ]"
       :ui="{ root: 'py-10 rounded-2xl bg-elevated ring ring-default' }"
@@ -102,7 +103,7 @@ const venueNames = computed(() => new Map(venues.value?.map((venue) => [venue._i
           icon: 'i-lucide-calendar-days',
           color: 'neutral',
           variant: 'outline',
-          to: '/calendar',
+          to: localePath('/calendar'),
         },
       ]"
       :ui="{ root: 'py-10 rounded-2xl bg-elevated ring ring-default' }"
