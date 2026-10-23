@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import { addLisbonDays } from "./model/time";
 import {
   createSlot,
   createUser,
@@ -270,6 +271,61 @@ describe("availability.copyLastWeek", () => {
       [lastTue14 + 10 * DAY, "open"],
     ]);
     expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(0);
+  });
+
+  async function copiedStarts(t: T, userId: Id<"users">, after: number) {
+    const slots = await t.run(async (ctx) => ctx.db.query("availabilitySlots").collect());
+    return slots
+      .filter((s) => s.userId === userId && s.startAt > after)
+      .map((s) => [s.startAt, s.endAt - s.startAt]);
+  }
+
+  it("keeps the Lisbon wall-clock time across the autumn clock change", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    /** Tue 20 Oct 2026 18:00 WEST */
+    const source = Date.UTC(2026, 9, 20, 17);
+    await insertSlot(t, { userId: a.userId, startAt: source, status: "expired" });
+    const now = Date.UTC(2026, 9, 26, 12);
+    vi.setSystemTime(now);
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
+    // Tue 27 Oct 18:00 WET
+    expect(await copiedStarts(t, a.userId, now)).toEqual([[Date.UTC(2026, 9, 27, 18), HOUR]]);
+  });
+
+  it("keeps the Lisbon wall-clock time across the spring clock change and skips copies now in the past", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    // Mon 22 Mar 2027 12:30 WET: a week later is 12:30 WEST = 11:30Z, before now
+    await insertSlot(t, {
+      userId: a.userId,
+      startAt: Date.UTC(2027, 2, 22, 12, 30),
+      status: "expired",
+    });
+    // Tue 23 Mar 2027 18:00 WET
+    await insertSlot(t, {
+      userId: a.userId,
+      startAt: Date.UTC(2027, 2, 23, 18),
+      status: "expired",
+    });
+    const now = Date.UTC(2027, 2, 29, 12);
+    vi.setSystemTime(now);
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
+    // Tue 30 Mar 18:00 WEST
+    expect(await copiedStarts(t, a.userId, now)).toEqual([[Date.UTC(2027, 2, 30, 17), HOUR]]);
+  });
+});
+
+describe("addLisbonDays", () => {
+  it("is a plain 7 x 24 h shift when no clock change is crossed", () => {
+    expect(addLisbonDays(NOW, 7)).toBe(NOW + 7 * DAY);
+  });
+
+  it("resolves wall times skipped or repeated by the clock change deterministically", () => {
+    // Sun 28 Mar 2027 01:30 does not exist: lands at 02:30 WEST
+    expect(addLisbonDays(Date.UTC(2027, 2, 21, 1, 30), 7)).toBe(Date.UTC(2027, 2, 28, 1, 30));
+    // Sun 25 Oct 2026 01:30 happens twice: takes the earlier, 01:30 WEST
+    expect(addLisbonDays(Date.UTC(2026, 9, 18, 0, 30), 7)).toBe(Date.UTC(2026, 9, 25, 0, 30));
   });
 });
 
