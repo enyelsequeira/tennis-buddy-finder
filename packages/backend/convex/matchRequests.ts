@@ -94,6 +94,7 @@ export const accept = profileMutation({
     if (await isBanned(ctx, request.fromUserId)) fail("NOT_FOUND");
     const slot = await ctx.db.get("availabilitySlots", request.slotId);
     if (!slot || slot.status !== "open") fail("SLOT_NOT_OPEN");
+    if (slot.startAt <= Date.now()) fail("SLOT_IN_PAST");
     if (await isBlockedEitherWay(ctx, user._id, request.fromUserId)) fail("BLOCKED");
 
     const conversationId = await getOrCreateConversation(ctx, {
