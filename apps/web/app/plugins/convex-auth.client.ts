@@ -61,7 +61,8 @@ export default defineNuxtPlugin((nuxtApp) => {
         // Only on signed-in -> signed-out; the first run (session still loading) has no previous id.
         if (previousSessionId) {
           void nuxtApp.runWithContext(() => {
-            if (!useRoute().meta.groups?.includes("app")) return;
+            // `useRoute()` warns when this runs inside a navigation (same-tab sign-out).
+            if (!useRouter().currentRoute.value.meta.groups?.includes("app")) return;
             return navigateTo(useLocalePath()("/login"), { replace: true });
           });
         }
