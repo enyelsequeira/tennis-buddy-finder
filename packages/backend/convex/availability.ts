@@ -220,7 +220,7 @@ export const search = profileQuery({
         q
           .eq("municipality", profile.municipality)
           .eq("status", "open")
-          .gte("startAt", Math.max(args.from, now))
+          .gte("startAt", args.from)
           .lt("startAt", args.to),
       )
       .paginate({
@@ -249,6 +249,8 @@ export const search = profileQuery({
     // hold fewer items than requested, and the client keeps loading while `isDone` is false.
     const page = [];
     for (const slot of result.page) {
+      // Not in the index range: a bound that moves with the clock invalidates the page cursor.
+      if (slot.startAt <= now) continue;
       if (args.venueId !== undefined && slot.venueId !== args.venueId) continue;
       if (!players.has(slot.userId)) players.set(slot.userId, await loadPlayer(slot.userId));
       const player = players.get(slot.userId);
