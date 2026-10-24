@@ -100,6 +100,7 @@
     "errors": {
       "notPending": "This request has already been answered or cancelled.",
       "slotNotOpen": "This slot is no longer open.",
+      "slotInPast": "This slot has already started.",
       "forbidden": "You can't change this request.",
       "notFound": "This request no longer exists.",
       "generic": "Couldn't complete the action. Check your connection and try again."

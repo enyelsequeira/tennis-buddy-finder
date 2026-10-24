@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
 import { createSlot, createUser, HOUR, NOW, setup, type T, tomorrow10 } from "./test.helpers";
@@ -173,6 +173,29 @@ describe("matchRequests.accept", () => {
       "REQUEST_NOT_PENDING",
     );
     expect(await allConversations(t)).toHaveLength(0);
+  });
+
+  it("rejects once the slot has started and changes nothing", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const slotId = await createSlot(owner);
+    const req = await a.as.mutation(api.matchRequests.send, { slotId });
+
+    vi.setSystemTime(tomorrow10);
+    await expect(owner.as.mutation(api.matchRequests.accept, { requestId: req })).rejects.toThrow(
+      "SLOT_IN_PAST",
+    );
+
+    const [slot, row] = await t.run(async (ctx) =>
+      Promise.all([ctx.db.get("availabilitySlots", slotId), ctx.db.get("matchRequests", req)]),
+    );
+    expect(slot?.status).toBe("open");
+    expect(row).toMatchObject({ status: "pending" });
+    expect(row?.respondedAt).toBeUndefined();
+    expect(row?.conversationId).toBeUndefined();
+    expect(await allConversations(t)).toHaveLength(0);
+    expect(await a.as.query(api.notifications.unread, {})).toHaveLength(0);
   });
 });
 

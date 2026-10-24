@@ -12,6 +12,7 @@ const props = defineProps<{
 const REQUEST_ERROR_KEYS = {
   REQUEST_NOT_PENDING: "notPending",
   SLOT_NOT_OPEN: "slotNotOpen",
+  SLOT_IN_PAST: "slotInPast",
   FORBIDDEN: "forbidden",
   NOT_FOUND: "notFound",
 } as const;
@@ -22,6 +23,8 @@ const { formatLongDay, formatRange } = useLisbonTime();
 
 const player = computed(() => toSlotPlayer(props.view.player));
 const isWaiting = computed(() => props.view.request.status === "pending");
+const timestamp = useTimestamp({ interval: 60_000 });
+const hasStarted = computed(() => props.view.slot.startAt <= timestamp.value);
 const slotStatus = computed(() => {
   const { status } = props.view.slot;
   return status === "open" || status === "matched" ? status : "closed";
@@ -113,6 +116,7 @@ async function respond(action: Action) {
           @click="respond('decline')"
         />
         <UButton
+          v-if="!hasStarted"
           :label="t('request.accept')"
           :loading="busy === 'accept'"
           :disabled="busy === 'decline'"

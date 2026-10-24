@@ -100,6 +100,7 @@
     "errors": {
       "notPending": "Este pedido já foi respondido ou cancelado.",
       "slotNotOpen": "Este horário já não está livre.",
+      "slotInPast": "Este horário já começou.",
       "forbidden": "Não podes alterar este pedido.",
       "notFound": "Este pedido já não existe.",
       "generic": "Não foi possível concluir a ação. Verifica a ligação e tenta outra vez."
