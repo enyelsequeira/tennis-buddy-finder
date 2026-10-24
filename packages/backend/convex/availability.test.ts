@@ -34,6 +34,40 @@ function insertSlot(t: T, slot: RawSlot) {
   );
 }
 
+type AsyncSyscall = (op: string, jsonArgs: string) => Promise<string>;
+
+/**
+ * convex-test accepts any cursor, but a deployment throws InvalidCursor when a cursor is reused
+ * with a different query (index range). Mirrors that check for the paginated queries run in `fn`.
+ */
+async function withCursorCheck<R>(fn: () => Promise<R>) {
+  const convex = (globalThis as unknown as { Convex: object }).Convex;
+  const original = Object.getOwnPropertyDescriptor(convex, "asyncSyscall")!;
+  const queryByCursor = new Map<string, string>();
+  Object.defineProperty(convex, "asyncSyscall", {
+    configurable: true,
+    get: () => {
+      const syscall = original.get!.call(convex) as AsyncSyscall;
+      return async (op: string, jsonArgs: string) => {
+        if (op !== "1.0/queryPage") return syscall(op, jsonArgs);
+        const { query, cursor } = JSON.parse(jsonArgs);
+        const queryKey = JSON.stringify(query);
+        if (cursor !== null && queryByCursor.get(cursor) !== queryKey) {
+          throw new Error("InvalidCursor: this cursor is from a different query");
+        }
+        const result = await syscall(op, jsonArgs);
+        queryByCursor.set(JSON.parse(result).continueCursor, queryKey);
+        return result;
+      };
+    },
+  });
+  try {
+    return await fn();
+  } finally {
+    Object.defineProperty(convex, "asyncSyscall", original);
+  }
+}
+
 describe("availability.create", () => {
   it("creates an open slot copying the profile location", async () => {
     const t = setup();
@@ -417,6 +451,42 @@ describe("availability.search", () => {
       paginationOpts: page,
     });
     expect(result.page.map((r) => r.slot.startAt)).toEqual([tomorrow10]);
+  });
+
+  it("skips a slot starting exactly now", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const other = await createUser(t);
+    await insertSlot(t, { userId: other.userId, startAt: NOW, status: "open" });
+    await createSlot(other, tomorrow10);
+    const result = await me.as.query(api.availability.search, {
+      ...week,
+      minNtrp: 1,
+      maxNtrp: 7,
+      paginationOpts: page,
+    });
+    expect(result.page.map((r) => r.slot.startAt)).toEqual([tomorrow10]);
+  });
+
+  it("keeps a page cursor valid after the clock moves", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const other = await createUser(t);
+    for (const offset of [0, 1]) await createSlot(other, tomorrow10 + offset * DAY);
+    // Like /find, which searches from the start of today.
+    const base = { from: NOW - HOUR, to: NOW + 7 * DAY, minNtrp: 1, maxNtrp: 7 };
+    const second = await withCursorCheck(async () => {
+      const first = await me.as.query(api.availability.search, {
+        ...base,
+        paginationOpts: { numItems: 1, cursor: null },
+      });
+      vi.setSystemTime(NOW + 60 * 1000);
+      return me.as.query(api.availability.search, {
+        ...base,
+        paginationOpts: { numItems: 1, cursor: first.continueCursor },
+      });
+    });
+    expect(second.page.map((r) => r.slot.startAt)).toEqual([tomorrow10 + DAY]);
   });
 
   it("pages through results in start order", async () => {
