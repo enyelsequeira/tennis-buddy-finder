@@ -8,7 +8,7 @@ import { fail } from "./model/errors";
 import { createNotification } from "./model/notifications";
 import { playerCard, toPlayerCard } from "./model/playerCard";
 import { declinePendingForSlot } from "./model/requests";
-import { DAY, isOnSlotGrid, MAX_SLOT_MS } from "./model/time";
+import { addLisbonDays, DAY, isOnSlotGrid, MAX_SLOT_MS } from "./model/time";
 import { formatsValidator, paginated } from "./model/validators";
 import schema from "./schema";
 
@@ -160,7 +160,7 @@ export const copyLastWeek = profileMutation({
   handler: async (ctx) => {
     const { user } = ctx;
     const now = Date.now();
-    // The exclusive lower bound keeps every copy (startAt + 7 days) in the future.
+    // Rolling window: slots that started in the last 7 days, not the previous calendar week.
     const lastWeek = await ctx.db
       .query("availabilitySlots")
       .withIndex("by_userId_and_startAt", (q) =>
@@ -173,8 +173,12 @@ export const copyLastWeek = profileMutation({
     let created = 0;
     for (const slot of lastWeek) {
       if (slot.status === "cancelled") continue;
-      const startAt = slot.startAt + 7 * DAY;
-      const endAt = slot.endAt + 7 * DAY;
+      // Same Lisbon wall-clock time a week later, so copies across a DST change keep their hour.
+      const startAt = addLisbonDays(slot.startAt, 7);
+      // Keeping the duration avoids inverted or over-long slots when one spans the clock change.
+      const endAt = startAt + (slot.endAt - slot.startAt);
+      // Across spring-forward a week is only 167 h, so the earliest copies can land in the past.
+      if (startAt <= now) continue;
       if (await hasOverlap(ctx, { userId: user._id, startAt, endAt })) continue;
       await ctx.db.insert("availabilitySlots", {
         userId: user._id,

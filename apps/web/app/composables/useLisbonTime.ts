@@ -10,9 +10,10 @@ dayjs.extend(timezone);
 
 /**
  * Owns every Europe/Lisbon formatting and day-boundary computation.
- * Timestamps in and out are milliseconds since epoch, UTC; the backend
- * never does timezone math. Weekday and month names follow the active
- * i18n locale; format patterns come from the `dates.*` translation keys.
+ * Timestamps in and out are milliseconds since epoch, UTC; the backend's
+ * only timezone math is `addLisbonDays` (copy last week). Weekday and
+ * month names follow the active i18n locale; format patterns come from
+ * the `dates.*` translation keys.
  *
  * Call it in `<script setup>` (it reads the i18n context), then pass the
  * helpers you need into plain utilities.

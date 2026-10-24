@@ -34,6 +34,48 @@ export function ageOn(birthDate: string, at: number) {
   return age;
 }
 
+const lisbonClock = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Lisbon",
+  hourCycle: "h23",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+});
+
+/** Lisbon's UTC offset in ms at an instant (0 in winter, one hour in summer). */
+function lisbonOffset(ms: number) {
+  const parts = lisbonClock.formatToParts(ms);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  const wall = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour"),
+    get("minute"),
+    get("second"),
+  );
+  return wall - (ms - (ms % 1000));
+}
+
+/**
+ * Adds whole calendar days on the Europe/Lisbon wall clock, keeping the time of day.
+ * A wall time repeated by fall-back takes the earlier instant; one skipped by
+ * spring-forward keeps the pre-gap offset, landing an hour later (like Temporal's "compatible").
+ */
+export function addLisbonDays(ms: number, days: number) {
+  const wall = ms + lisbonOffset(ms) + days * DAY;
+  const before = lisbonOffset(wall - DAY / 2);
+  const after = lisbonOffset(wall + DAY / 2);
+  const exact = [wall - Math.max(before, after), wall - Math.min(before, after)].find(
+    (at) => at + lisbonOffset(at) === wall,
+  );
+  return exact ?? wall - before;
+}
+
 export function isOnSlotGrid(ts: number) {
   return ts % SLOT_STEP_MS === 0;
 }
