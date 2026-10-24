@@ -14,8 +14,11 @@ type FetchTokenOptions = { forceRefreshToken: boolean };
  * `useConvexAuthReady()` mirrors the client's authenticated state: it turns
  * true once Convex has accepted a token (mutations are safe to call) and
  * false the moment the session goes away.
+ *
+ * A session that goes away while an app page is open (e.g. signed out in
+ * another tab) sends the user to the login page, since no route guard re-runs.
  */
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const convex = useConvexClient();
   const session = authClient.useSession();
   const ready = useConvexAuthReady();
@@ -45,7 +48,7 @@ export default defineNuxtPlugin(() => {
 
   watch(
     () => session.value.data?.session.id,
-    (sessionId) => {
+    (sessionId, previousSessionId) => {
       cachedToken = null;
       if (sessionId) {
         convex.setAuth(fetchAccessToken, (isAuthenticated) => {
@@ -55,6 +58,13 @@ export default defineNuxtPlugin(() => {
         ready.value = false;
         // `clearAuth` lives on the underlying BaseConvexClient, not the wrapper.
         convex.client.clearAuth();
+        // Only on signed-in -> signed-out; the first run (session still loading) has no previous id.
+        if (previousSessionId) {
+          void nuxtApp.runWithContext(() => {
+            if (!useRoute().meta.groups?.includes("app")) return;
+            return navigateTo(useLocalePath()("/login"), { replace: true });
+          });
+        }
       }
     },
     { immediate: true },
