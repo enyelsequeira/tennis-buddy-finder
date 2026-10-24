@@ -5,6 +5,7 @@ import type { Id } from "@tennis-buddy-finder/backend/convex/_generated/dataMode
 defineProps<{ activeId?: Id<"conversations"> }>();
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 const { data: conversations, error, isPending } = useAuthedQuery(api.conversations.list);
 </script>
 
@@ -53,7 +54,7 @@ const { data: conversations, error, isPending } = useAuthedQuery(api.conversatio
           icon: 'i-lucide-search',
           color: 'neutral',
           variant: 'outline',
-          to: '/find',
+          to: localePath('/find'),
         },
       ]"
       :ui="{ root: 'py-16' }"

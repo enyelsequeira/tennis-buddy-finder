@@ -30,7 +30,9 @@ export default defineNuxtConfig({
     detectBrowserLanguage: {
       useCookie: true,
       cookieKey: "locale",
-      redirectOn: "root",
+      // Detect on every unprefixed path (not just `/`), so `/login` etc. keep an English
+      // visitor's locale instead of rendering PT and resetting the cookie (#21).
+      redirectOn: "no prefix",
     },
     experimental: {
       typedOptionsAndMessages: "default",

@@ -18,6 +18,7 @@ const REQUEST_ERROR_KEYS = {
 } as const;
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 const toast = useToast();
 const { formatLongDay, formatRange } = useLisbonTime();
 
@@ -40,7 +41,7 @@ type Action = keyof typeof mutations;
 const busy = ref<Action | null>(null);
 
 const chatLink = (conversationId?: Id<"conversations">) =>
-  conversationId ? `/messages/${conversationId}` : "/messages";
+  localePath(conversationId ? `/messages/${conversationId}` : "/messages");
 
 async function respond(action: Action) {
   busy.value = action;
@@ -74,7 +75,7 @@ async function respond(action: Action) {
     "
   >
     <div class="flex items-start justify-between gap-3">
-      <ULink :to="`/players/${view.player.userId}`" class="min-w-0">
+      <ULink :to="localePath(`/players/${view.player.userId}`)" class="min-w-0">
         <PlayerIdentity :player="player" :venue="venue" />
       </ULink>
       <RequestStatusBadge :status="view.request.status" class="shrink-0" />

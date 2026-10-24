@@ -214,7 +214,11 @@ const menu = computed<DropdownMenuItem[]>(() => {
   const otherUserId = thread.data.value?.otherUserId;
   if (!otherUserId || !player.value) return [];
   return [
-    { label: t("chat.viewProfile"), icon: "i-lucide-user-round", to: `/players/${otherUserId}` },
+    {
+      label: t("chat.viewProfile"),
+      icon: "i-lucide-user-round",
+      to: localePath(`/players/${otherUserId}`),
+    },
     {
       label: t("playerPage.block"),
       icon: "i-lucide-ban",
@@ -246,7 +250,7 @@ async function confirmBlock() {
       class="flex shrink-0 items-center gap-2 border-b border-default bg-elevated px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-4"
     >
       <UButton
-        to="/messages"
+        :to="localePath('/messages')"
         icon="i-lucide-chevron-left"
         color="neutral"
         variant="ghost"
@@ -262,7 +266,7 @@ async function confirmBlock() {
       <template v-else-if="!notFound">
         <ULink
           v-if="player && thread.data.value"
-          :to="`/players/${thread.data.value.otherUserId}`"
+          :to="localePath(`/players/${thread.data.value.otherUserId}`)"
           class="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-primary"
         >
           <UAvatar
@@ -300,7 +304,7 @@ async function confirmBlock() {
           icon: 'i-lucide-arrow-left',
           color: 'neutral',
           variant: 'outline',
-          to: '/messages',
+          to: localePath('/messages'),
         },
       ]"
       :ui="{ root: 'flex-1 py-16' }"
