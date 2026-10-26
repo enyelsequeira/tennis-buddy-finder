@@ -25,6 +25,7 @@ const SLOT_ERROR_KEYS = {
 
 const { t } = useI18n();
 const toast = useToast();
+const localePath = useLocalePath();
 const { atTime, dayBounds, halfHours, formatTime } = useLisbonTime();
 const now = useTimestamp({ interval: 30_000 });
 
@@ -46,6 +47,7 @@ const rows = computed(() =>
           {
             ...slot,
             status: slot.status,
+            phase: slotPhase(slot, now.value),
             venue: venues.value?.find((venue) => venue._id === slot.venueId)?.name,
           },
         ]
@@ -57,17 +59,16 @@ function errorMessage(error: unknown) {
   return t(`calendar.errors.${convexErrorKey(error, SLOT_ERROR_KEYS)}`);
 }
 
-const { mutate: removeSlot } = useConvexMutation(api.availability.remove);
+const { mutate: removeSlot, isPending: isRemoving } = useConvexMutation(api.availability.remove);
 const removing = ref<Id<"availabilitySlots"> | null>(null);
 
-async function onRemove(slotId: Id<"availabilitySlots">) {
-  removing.value = slotId;
+async function confirmRemove() {
+  if (!removing.value) return;
   try {
-    await removeSlot({ slotId });
+    await removeSlot({ slotId: removing.value });
+    removing.value = null;
   } catch (error) {
     toast.add({ title: errorMessage(error), color: "error" });
-  } finally {
-    removing.value = null;
   }
 }
 
@@ -177,11 +178,14 @@ async function onSubmit({ data }: FormSubmitEvent<SlotInput>) {
         <SlotRow
           :start-at="row.startAt"
           :end-at="row.endAt"
-          :status="row.status"
+          :status="row.phase === 'upcoming' ? row.status : 'closed'"
           :venue="row.venue"
         >
           <template #trailing>
-            <UTooltip v-if="row.status === 'open'" :text="t('calendar.removeSlot')">
+            <span v-if="row.phase !== 'upcoming'" class="text-sm text-muted">
+              {{ t(`calendar.phase.${row.phase}`) }}
+            </span>
+            <UTooltip v-else-if="row.status === 'open'" :text="t('calendar.removeSlot')">
               <UButton
                 icon="i-lucide-x"
                 color="neutral"
@@ -189,8 +193,7 @@ async function onSubmit({ data }: FormSubmitEvent<SlotInput>) {
                 class="size-11 justify-center"
                 :ui="{ leadingIcon: 'size-4' }"
                 :aria-label="t('calendar.removeSlot')"
-                :loading="removing === row._id"
-                @click="onRemove(row._id)"
+                @click="removing = row._id"
               />
             </UTooltip>
             <UButton
@@ -203,6 +206,11 @@ async function onSubmit({ data }: FormSubmitEvent<SlotInput>) {
             />
           </template>
         </SlotRow>
+        <p v-if="row.partner" class="pb-2 ps-5 text-xs">
+          <ULink :to="localePath(`/players/${row.partner.userId}`)" class="font-medium">
+            {{ t("calendar.withPartner", { name: row.partner.displayName }) }}
+          </ULink>
+        </p>
         <p v-if="row.note" class="pb-2 ps-5 text-xs text-muted">{{ row.note }}</p>
       </li>
     </ul>
@@ -246,6 +254,31 @@ async function onSubmit({ data }: FormSubmitEvent<SlotInput>) {
         block
       />
     </UForm>
+
+    <UModal
+      :open="!!removing"
+      :title="t('calendar.removeTitle')"
+      :description="t('calendar.removeDescription')"
+      @update:open="removing = null"
+    >
+      <template #footer="{ close }">
+        <div class="flex w-full justify-end gap-2">
+          <UButton
+            :label="t('calendar.removeKeep')"
+            color="neutral"
+            variant="outline"
+            :disabled="isRemoving"
+            @click="close"
+          />
+          <UButton
+            :label="t('calendar.removeSlot')"
+            color="error"
+            :loading="isRemoving"
+            @click="confirmRemove"
+          />
+        </div>
+      </template>
+    </UModal>
 
     <UModal
       :open="!!cancelling"

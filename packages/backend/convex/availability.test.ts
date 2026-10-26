@@ -306,6 +306,37 @@ describe("availability.mine", () => {
     const mine = await a.as.query(api.availability.mine, week);
     expect(mine.map((s) => s.startAt)).toEqual([tomorrow10, tomorrow10 + 2 * DAY]);
   });
+
+  it("names the accepted partner on my matched slots only, unless they are hidden from me", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const asker = await createUser(t);
+    await createSlot(owner, tomorrow10);
+    const matched = await createSlot(owner, tomorrow10 + 2 * HOUR);
+    const pending = await createSlot(owner, tomorrow10 + 4 * HOUR);
+    const requestId = await asker.as.mutation(api.matchRequests.send, { slotId: matched });
+    await owner.as.mutation(api.matchRequests.accept, { requestId });
+    await asker.as.mutation(api.matchRequests.send, { slotId: pending });
+    const profile = await t.run(async (ctx) =>
+      ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", asker.userId))
+        .unique(),
+    );
+    const mine = await owner.as.query(api.availability.mine, week);
+    expect(mine.map((s) => [s.status, s.partner])).toEqual([
+      ["open", undefined],
+      ["matched", { userId: asker.userId, displayName: profile!.displayName }],
+      ["open", undefined],
+    ]);
+    await owner.as.mutation(api.blocks.block, { userId: asker.userId });
+    const afterBlock = await owner.as.query(api.availability.mine, week);
+    expect(afterBlock.map((s) => [s.status, s.partner])).toEqual([
+      ["open", undefined],
+      ["matched", undefined],
+      ["open", undefined],
+    ]);
+  });
 });
 
 describe("availability.listOpenForUser", () => {
@@ -341,13 +372,30 @@ describe("availability.copyLastWeek", () => {
     // copy lands Friday 14:00
     await insertSlot(t, { userId, startAt: lastTue14 + 3 * DAY, status: "expired" });
     await insertSlot(t, { userId, startAt: lastTue14 + 8 * DAY, status: "open" });
-    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toEqual({
+      created: 1,
+      skipped: 1,
+    });
     const mine = await a.as.query(api.availability.mine, week);
     expect(mine.map((s) => [s.startAt, s.status])).toEqual([
       [lastTue14 + 8 * DAY, "open"],
       [lastTue14 + 10 * DAY, "open"],
     ]);
-    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(0);
+    // A second copy creates nothing but tells "already copied" apart from "nothing last week".
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toEqual({
+      created: 0,
+      skipped: 2,
+    });
+  });
+
+  it("reports nothing created or skipped when last week had no slots", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    await insertSlot(t, { userId: a.userId, startAt: NOW - 3 * DAY, status: "cancelled" });
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toEqual({
+      created: 0,
+      skipped: 0,
+    });
   });
 
   async function copiedStarts(t: T, userId: Id<"users">, after: number) {
@@ -365,7 +413,10 @@ describe("availability.copyLastWeek", () => {
     await insertSlot(t, { userId: a.userId, startAt: source, status: "expired" });
     const now = Date.UTC(2026, 9, 26, 12);
     vi.setSystemTime(now);
-    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toEqual({
+      created: 1,
+      skipped: 0,
+    });
     // Tue 27 Oct 18:00 WET
     expect(await copiedStarts(t, a.userId, now)).toEqual([[Date.UTC(2026, 9, 27, 18), HOUR]]);
   });
@@ -387,7 +438,10 @@ describe("availability.copyLastWeek", () => {
     });
     const now = Date.UTC(2027, 2, 29, 12);
     vi.setSystemTime(now);
-    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toEqual({
+      created: 1,
+      skipped: 1,
+    });
     // Tue 30 Mar 18:00 WEST
     expect(await copiedStarts(t, a.userId, now)).toEqual([[Date.UTC(2027, 2, 30, 17), HOUR]]);
   });
@@ -408,7 +462,10 @@ describe("availability.copyLastWeek", () => {
     });
     const before = await t.run(async (ctx) => ctx.db.get("availabilitySlots", originalId));
     await change(t, { userId: a.userId, venueId });
-    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toEqual({
+      created: 1,
+      skipped: 0,
+    });
     const [original, copy] = await t.run(async (ctx) =>
       ctx.db
         .query("availabilitySlots")

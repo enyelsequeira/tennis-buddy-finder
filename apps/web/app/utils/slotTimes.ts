@@ -8,6 +8,10 @@ export const latestEnd = (startAt: number, slots: TimeRange[]) =>
     ...slots.filter((slot) => slot.startAt >= startAt).map((slot) => slot.startAt),
   );
 
+/** Where `slot` is relative to `now`; a slot counts as started from exactly its start. */
+export const slotPhase = (slot: TimeRange, now: number) =>
+  slot.endAt <= now ? "finished" : slot.startAt <= now ? "inProgress" : "upcoming";
+
 /** "HH:mm", plus the zone for the hour Lisbon's autumn clock change repeats: "01:00 (WEST)" / "01:00 (WET)". */
 export function timeLabel(at: number, formatTime: (ms: number) => string) {
   const label = formatTime(at);

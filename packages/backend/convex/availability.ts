@@ -128,15 +128,30 @@ export const cancel = profileMutation({
 
 export const mine = profileQuery({
   args: { from: v.number(), to: v.number() },
-  returns: v.array(slotDoc),
+  returns: v.array(
+    slotDoc.extend({
+      partner: v.optional(v.object({ userId: v.id("users"), displayName: v.string() })),
+    }),
+  ),
   handler: async (ctx, args) => {
     const { user } = ctx;
-    return ctx.db
+    const slots = await ctx.db
       .query("availabilitySlots")
       .withIndex("by_userId_and_startAt", (q) =>
         q.eq("userId", user._id).gte("startAt", args.from).lt("startAt", args.to),
       )
       .take(MAX_SLOTS_PER_QUERY);
+    async function loadPartner(slot: Doc<"availabilitySlots">) {
+      if (slot.status !== "matched") return undefined;
+      const accepted = await ctx.db
+        .query("matchRequests")
+        .withIndex("by_slotId_and_status", (q) => q.eq("slotId", slot._id).eq("status", "accepted"))
+        .unique();
+      if (!accepted || (await isHiddenFrom(ctx, user._id, accepted.fromUserId))) return undefined;
+      const profile = await getProfileForUser(ctx, accepted.fromUserId);
+      return profile ? { userId: profile.userId, displayName: profile.displayName } : undefined;
+    }
+    return Promise.all(slots.map(async (slot) => ({ ...slot, partner: await loadPartner(slot) })));
   },
 });
 
@@ -158,7 +173,7 @@ export const listOpenForUser = profileQuery({
 
 export const copyLastWeek = profileMutation({
   args: {},
-  returns: v.number(),
+  returns: v.object({ created: v.number(), skipped: v.number() }),
   handler: async (ctx) => {
     const { user, profile } = ctx;
     const now = Date.now();
@@ -173,6 +188,8 @@ export const copyLastWeek = profileMutation({
       )
       .take(MAX_SLOTS_PER_QUERY);
     let created = 0;
+    // Lets the client tell "already copied" apart from "nothing to copy".
+    let skipped = 0;
     for (const slot of lastWeek) {
       if (slot.status === "cancelled") continue;
       // Same Lisbon wall-clock time a week later, so copies across a DST change keep their hour.
@@ -180,8 +197,10 @@ export const copyLastWeek = profileMutation({
       // Keeping the duration avoids inverted or over-long slots when one spans the clock change.
       const endAt = startAt + (slot.endAt - slot.startAt);
       // Across spring-forward a week is only 167 h, so the earliest copies can land in the past.
-      if (startAt <= now) continue;
-      if (await hasOverlap(ctx, { userId: user._id, startAt, endAt })) continue;
+      if (startAt <= now || (await hasOverlap(ctx, { userId: user._id, startAt, endAt }))) {
+        skipped += 1;
+        continue;
+      }
       await ctx.db.insert("availabilitySlots", {
         userId: user._id,
         startAt,
@@ -198,7 +217,7 @@ export const copyLastWeek = profileMutation({
       });
       created += 1;
     }
-    return created;
+    return { created, skipped };
   },
 });
 

@@ -374,6 +374,7 @@
     "subtitle": "Quando podes jogar",
     "copyLastWeek": "Copiar a semana passada",
     "copied": "Não havia horários para copiar | 1 horário copiado | {n} horários copiados",
+    "copiedNothingNew": "Nada de novo para copiar",
     "empty": "Não tens horários este mês. Adiciona quando podes jogar e os jogadores podem encontrar-te.",
     "loadError": "Não foi possível carregar os horários. Verifica a ligação e tenta outra vez.",
     "dayEmpty": "Ainda não tens horários neste dia.",
@@ -384,6 +385,14 @@
     "addSlot": "Adicionar horário",
     "slotAdded": "Horário adicionado",
     "removeSlot": "Remover horário",
+    "removeTitle": "Remover este horário?",
+    "removeDescription": "Os pedidos pendentes para este horário são recusados.",
+    "removeKeep": "Manter horário",
+    "withPartner": "Com {name}",
+    "phase": {
+      "inProgress": "A decorrer",
+      "finished": "Terminado"
+    },
     "cancel": "Cancelar",
     "cancelTitle": "Cancelar este jogo?",
     "cancelDescription": "O outro jogador é avisado e o horário sai do teu calendário.",
