@@ -47,6 +47,7 @@ const inThread = computed(() => isActive("/messages") && Boolean(route.params.id
         color="warning"
         size="3xl"
         :show="!!tab.unread"
+        aria-hidden="true"
         :text="unreadBadge(tab.unread ?? 0)"
         :ui="{ base: 'px-1' }"
       >

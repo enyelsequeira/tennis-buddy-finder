@@ -64,6 +64,7 @@ const displayName = computed(() => me.value?.profile?.displayName ?? me.value?.u
           standalone
           color="warning"
           size="3xl"
+          aria-hidden="true"
           :text="unreadBadge(items[index]?.unread)"
           :ui="{ base: 'px-1' }"
         />
