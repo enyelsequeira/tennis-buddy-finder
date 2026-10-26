@@ -25,10 +25,27 @@ const venueItems = computed(() => [
 function update(patch: Partial<SearchFilterValues>) {
   filters.value = { ...filters.value, ...patch };
 }
+
+// shortcut: Nuxt UI 4.11 USlider drops range-thumb aria-labels, so reka writes English
+// "Minimum"/"Maximum" (also after mount); relabel on every write until USlider forwards them.
+const root = useTemplateRef<HTMLElement>("root");
+function labelNtrpThumbs() {
+  const labels = [t("find.ntrpMin"), t("find.ntrpMax")];
+  root.value?.querySelectorAll('[role="slider"]').forEach((thumb, index) => {
+    const label = labels[index];
+    if (label && thumb.getAttribute("aria-label") !== label)
+      thumb.setAttribute("aria-label", label);
+  });
+}
+// Started on mount so the observer is attached before reka's post-mount relabel.
+onMounted(() => {
+  useMutationObserver(root, labelNtrpThumbs, { subtree: true, attributeFilter: ["aria-label"] });
+  watchEffect(labelNtrpThumbs);
+});
 </script>
 
 <template>
-  <div class="flex flex-col gap-5">
+  <div ref="root" class="flex flex-col gap-5">
     <UFormField :label="t('find.timeOfDay')">
       <URadioGroup
         :model-value="filters.timeOfDay"
