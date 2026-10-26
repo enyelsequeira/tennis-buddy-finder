@@ -18,12 +18,15 @@ if (me.value?.profile) {
 useSeoMeta({ title: () => t("onboarding.seoTitle") });
 
 const displayName = computed(() => me.value?.user.name ?? "");
+// Keyed by user so another account in the same tab never sees this draft.
+const draftKey = me.value ? `onboarding-draft:${me.value.user._id}` : undefined;
 
 const { mutate: createProfile, isPending } = useConvexMutation(api.profiles.create);
 
 async function onSubmit(input: ProfileInput) {
   try {
     await createProfile(input);
+    if (draftKey) sessionStorage.removeItem(draftKey);
     await refresh();
     toast.add({ title: t("onboarding.success"), icon: "i-lucide-check" });
     await navigateTo(localePath("/find"));
@@ -51,6 +54,7 @@ async function onSubmit(input: ProfileInput) {
 
     <ProfileForm
       :initial="{ displayName }"
+      :draft-key="draftKey"
       :submit-label="t('onboarding.submit')"
       :pending="isPending"
       :disabled="!ready"

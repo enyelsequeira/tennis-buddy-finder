@@ -83,6 +83,10 @@ async function onNotificationsChange(enabled: boolean) {
   emailNotifications.value = enabled;
   try {
     await setEmailNotifications({ enabled });
+    toast.add({
+      title: t(enabled ? "settings.emailNotificationsOn" : "settings.emailNotificationsOff"),
+      icon: "i-lucide-check",
+    });
   } catch {
     emailNotifications.value = previous;
     toast.add({ title: t("settings.saveFailed"), color: "error" });
