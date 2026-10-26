@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import {
   createUser,
   DAY,
@@ -26,6 +27,24 @@ function tick(ms = 1000) {
 async function unreadMessageNotes(user: TestUser) {
   const notes = await user.as.query(api.notifications.unread, {});
   return notes.filter((note) => note.type === "new_message");
+}
+
+/** Every unread notification row of `userId` for one conversation, uncapped (unlike `notifications.unread`). */
+function unreadRowsFor(
+  t: ReturnType<typeof setup>,
+  userId: Id<"users">,
+  conversationId: Id<"conversations">,
+) {
+  return t.run(async (ctx) =>
+    (
+      await ctx.db
+        .query("notifications")
+        .withIndex("by_userId_and_readAt", (q) => q.eq("userId", userId).eq("readAt", undefined))
+        .collect()
+    )
+      .filter((row) => row.conversationId === conversationId)
+      .map((row) => row.type),
+  );
 }
 
 describe("messages.send / messages.list", () => {
@@ -158,6 +177,50 @@ describe("messages.send / messages.list", () => {
     expect(await unreadMessageNotes(owner)).toHaveLength(1);
   });
 
+  it.each([199, 200, 201])(
+    "keeps one message notification per conversation with %i newer unread notifications",
+    async (newer) => {
+      const t = setup();
+      const { owner, asker, conversationId } = await pair(t);
+      tick();
+      await asker.as.mutation(api.messages.send, { conversationId, body: "1" });
+      tick();
+      await t.run(async (ctx) => {
+        for (let i = 0; i < newer; i++) {
+          await ctx.db.insert("notifications", { userId: owner.userId, type: "request_received" });
+        }
+      });
+
+      tick();
+      await asker.as.mutation(api.messages.send, { conversationId, body: "2" });
+      expect(await unreadRowsFor(t, owner.userId, conversationId)).toEqual(["new_message"]);
+
+      tick();
+      await owner.as.mutation(api.conversations.markRead, { conversationId });
+      expect(await unreadRowsFor(t, owner.userId, conversationId)).toEqual([]);
+    },
+  );
+
+  it("markRead clears only this conversation's message notification", async () => {
+    const t = setup();
+    const { owner, asker, conversationId } = await pair(t);
+    const other = await createUser(t);
+    const second = await match(asker, other, tomorrow10 + 2 * HOUR);
+    tick();
+    await owner.as.mutation(api.messages.send, { conversationId, body: "hi" });
+    tick();
+    await other.as.mutation(api.messages.send, {
+      conversationId: second.conversationId,
+      body: "hey",
+    });
+
+    tick();
+    await asker.as.mutation(api.conversations.markRead, { conversationId });
+    // The acceptance notification carries the conversationId too, but is not a message one.
+    expect(await unreadRowsFor(t, asker.userId, conversationId)).toEqual(["request_accepted"]);
+    expect(await unreadRowsFor(t, asker.userId, second.conversationId)).toEqual(["new_message"]);
+  });
+
   it("markRead does not write when nothing is unread", async () => {
     const t = setup();
     const { owner, asker, conversationId } = await pair(t);
@@ -214,6 +277,48 @@ describe("conversations", () => {
     const after = await owner.as.query(api.conversations.list, {});
     expect(after.find((row) => row.conversationId === c1.conversationId)?.unreadCount).toBe(0);
   });
+
+  it.each([99, 100])(
+    "lists an old conversation first once it gets a message, with %i newer conversations",
+    async (newer) => {
+      const t = setup();
+      const { owner, asker, conversationId } = await pair(t);
+      tick();
+      // Seeded directly: going through match() for 100 players is slow and adds nothing here.
+      await t.run(async (ctx) => {
+        for (let i = 0; i < newer; i++) {
+          const otherId = await ctx.db.insert("users", {
+            authId: `seed_${i}`,
+            email: `seed${i}@test.pt`,
+            name: `Seed ${i}`,
+            role: "user",
+            emailNotifications: true,
+          });
+          const [userAId, userBId] =
+            owner.userId < otherId ? [owner.userId, otherId] : [otherId, owner.userId];
+          const seededId = await ctx.db.insert("conversations", {
+            userAId,
+            userBId,
+            lastMessageAt: Date.now(),
+          });
+          for (const userId of [userAId, userBId]) {
+            await ctx.db.insert("conversationMembers", { conversationId: seededId, userId });
+          }
+        }
+      });
+
+      tick();
+      await asker.as.mutation(api.messages.send, { conversationId, body: "still on?" });
+      const list = await owner.as.query(api.conversations.list, {});
+      expect(list).toHaveLength(100);
+      expect(list[0]).toMatchObject({
+        conversationId,
+        unreadCount: 1,
+        lastMessage: { body: "still on?", mine: false },
+        player: { userId: asker.userId },
+      });
+    },
+  );
 
   it("a fresh match shows an empty conversation and the matched slot", async () => {
     const t = setup();

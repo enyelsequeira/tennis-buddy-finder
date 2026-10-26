@@ -7,6 +7,7 @@ import { isHiddenFrom } from "./model/blocks";
 import {
   clearMessageNotifications,
   getMemberConversation,
+  getMembership,
   latestMessage,
   otherMemberId,
   unreadMessages,
@@ -52,16 +53,28 @@ export const list = profileQuery({
   returns: v.array(conversationSummary),
   handler: async (ctx) => {
     const { user } = ctx;
-    const memberships = await ctx.db
-      .query("conversationMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+    // The user sits on either side of the pair, so merge the newest of both sides.
+    const asA = await ctx.db
+      .query("conversations")
+      .withIndex("by_userAId_and_lastMessageAt", (q) => q.eq("userAId", user._id))
       .order("desc")
       .take(MAX_CONVERSATIONS);
+    const asB = await ctx.db
+      .query("conversations")
+      .withIndex("by_userBId_and_lastMessageAt", (q) => q.eq("userBId", user._id))
+      .order("desc")
+      .take(MAX_CONVERSATIONS);
+    const conversations = [...asA, ...asB]
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
+      .slice(0, MAX_CONVERSATIONS);
 
     const rows = [];
-    for (const membership of memberships) {
-      const conversation = await ctx.db.get("conversations", membership.conversationId);
-      if (!conversation) continue;
+    for (const conversation of conversations) {
+      const membership = await getMembership(ctx, {
+        conversationId: conversation._id,
+        userId: user._id,
+      });
+      if (!membership) continue;
       const otherUserId = otherMemberId(conversation, user._id);
       if (await isHiddenFrom(ctx, user._id, otherUserId)) continue;
 
@@ -88,7 +101,6 @@ export const list = profileQuery({
         unreadCount: unread.length,
       });
     }
-    rows.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
     return rows;
   },
 });
