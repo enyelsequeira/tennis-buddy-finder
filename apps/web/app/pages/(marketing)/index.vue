@@ -8,7 +8,6 @@ definePageMeta({
 const { t } = useI18n();
 
 useSeoMeta({
-  title: () => t("seo.title"),
   description: () => t("seo.description"),
   ogTitle: () => t("seo.title"),
   ogDescription: () => t("seo.description"),

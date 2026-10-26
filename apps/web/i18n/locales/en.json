@@ -201,7 +201,7 @@
       "submit": "Sign in",
       "noAccount": "No account yet?",
       "createOne": "Create one",
-      "seoTitle": "Sign in · Tennis Buddy",
+      "seoTitle": "Sign in",
       "seoDescription": "Sign in to your Tennis Buddy account to see who is free to play tennis in Figueira da Foz."
     },
     "register": {
@@ -210,7 +210,7 @@
       "submit": "Create account",
       "haveAccount": "Already have an account?",
       "signIn": "Sign in",
-      "seoTitle": "Create account · Tennis Buddy",
+      "seoTitle": "Create account",
       "seoDescription": "Create your Tennis Buddy account and find a hitting partner at your level in Figueira da Foz."
     },
     "providers": {
@@ -256,7 +256,7 @@
   "onboarding": {
     "title": "Tell us how you play",
     "subtitle": "Takes two minutes. It lets us show you players at your level.",
-    "seoTitle": "Create profile · Tennis Buddy",
+    "seoTitle": "Create profile",
     "optional": "Optional",
     "sections": {
       "aboutYou": "About you",
@@ -405,7 +405,7 @@
     }
   },
   "playerPage": {
-    "seoTitle": "{name} · Tennis Buddy",
+    "seoTitle": "{name}",
     "openSlots": "Open slots",
     "location": "{municipality}, {district}",
     "age": "{age} years",

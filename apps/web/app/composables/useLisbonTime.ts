@@ -3,10 +3,14 @@ import dayjs from "dayjs";
 import "dayjs/locale/en";
 import "dayjs/locale/pt";
 import timezone from "dayjs/plugin/timezone";
+import updateLocale from "dayjs/plugin/updateLocale";
 import utc from "dayjs/plugin/utc";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(updateLocale);
+// dayjs's Portuguese locale drops the accent on "sáb".
+dayjs.updateLocale("pt", { weekdaysShort: "dom_seg_ter_qua_qui_sex_sáb".split("_") });
 
 /**
  * Owns every Europe/Lisbon formatting and day-boundary computation.
