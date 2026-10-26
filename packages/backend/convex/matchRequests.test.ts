@@ -240,7 +240,62 @@ describe("matchRequests.cancel", () => {
     expect(await owner.as.query(api.matchRequests.received, {})).toHaveLength(0);
     expect(await a.as.query(api.matchRequests.sent, {})).toHaveLength(0);
     const notes = await owner.as.query(api.notifications.unread, {});
-    expect(notes.map((n) => n.type)).toEqual(["request_received"]);
+    expect(notes.map((n) => n.type)).toEqual([]);
+  });
+
+  it("send, cancel, re-send loops leave the owner one notification for the live request", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const slotId = await createSlot(owner);
+    const first = await a.as.mutation(api.matchRequests.send, { slotId });
+    await a.as.mutation(api.matchRequests.cancel, { requestId: first });
+    const second = await a.as.mutation(api.matchRequests.send, { slotId });
+    await a.as.mutation(api.matchRequests.cancel, { requestId: second });
+    const live = await a.as.mutation(api.matchRequests.send, { slotId });
+
+    const notes = await owner.as.query(api.notifications.unread, {});
+    expect(notes.map((n) => [n.type, n.requestId])).toEqual([["request_received", live]]);
+    const rows = await t.run(async (ctx) =>
+      Promise.all([first, second, live].map((id) => ctx.db.get("matchRequests", id))),
+    );
+    expect(rows.map((r) => r?.status)).toEqual(["cancelled", "cancelled", "pending"]);
+
+    const conversationId = await owner.as.mutation(api.matchRequests.accept, { requestId: live });
+    const aNotes = await a.as.query(api.notifications.unread, {});
+    expect(aNotes).toHaveLength(1);
+    expect(aNotes[0]).toMatchObject({ type: "request_accepted", requestId: live, conversationId });
+  });
+
+  it("also removes a notification the owner already read", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const slotId = await createSlot(owner);
+    const req = await a.as.mutation(api.matchRequests.send, { slotId });
+    await owner.as.mutation(api.notifications.markAllRead, {});
+    await a.as.mutation(api.matchRequests.cancel, { requestId: req });
+
+    const rows = await t.run(async (ctx) => ctx.db.query("notifications").take(10));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("keeps other requesters' notifications on the same slot", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const c = await createUser(t);
+    const slotId = await createSlot(owner);
+    const reqA = await a.as.mutation(api.matchRequests.send, { slotId });
+    const reqC = await c.as.mutation(api.matchRequests.send, { slotId });
+    await a.as.mutation(api.matchRequests.cancel, { requestId: reqA });
+
+    const notes = await owner.as.query(api.notifications.unread, {});
+    expect(notes.map((n) => [n.type, n.requestId])).toEqual([["request_received", reqC]]);
+
+    await owner.as.mutation(api.matchRequests.decline, { requestId: reqC });
+    const cNotes = await c.as.query(api.notifications.unread, {});
+    expect(cNotes.map((n) => [n.type, n.requestId])).toEqual([["request_declined", reqC]]);
   });
 });
 
