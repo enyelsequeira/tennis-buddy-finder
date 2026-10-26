@@ -21,11 +21,12 @@ export function parseIsoDate(value: string) {
   return { y, m, d };
 }
 
-/** Whole years between an ISO birth date and a timestamp (UTC calendar). */
+/** Whole years between an ISO birth date and a timestamp (Europe/Lisbon calendar, like the web client). */
 export function ageOn(birthDate: string, at: number) {
   const parsed = parseIsoDate(birthDate);
   if (!parsed) throw new Error(`Invalid ISO date: ${birthDate}`);
-  const now = new Date(at);
+  // Shift to Lisbon wall time so the getUTC* reads below see the Lisbon date.
+  const now = new Date(at + lisbonOffset(at));
   let age = now.getUTCFullYear() - parsed.y;
   const beforeBirthday =
     now.getUTCMonth() + 1 < parsed.m ||
