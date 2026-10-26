@@ -53,8 +53,14 @@ const { mutate: copyLastWeek, isPending: isCopying } = useConvexMutation(
 
 async function onCopy() {
   try {
-    const count = await copyLastWeek({});
-    toast.add({ title: t("calendar.copied", count), icon: "i-lucide-check" });
+    const { created, skipped } = await copyLastWeek({});
+    toast.add({
+      title:
+        created === 0 && skipped > 0
+          ? t("calendar.copiedNothingNew")
+          : t("calendar.copied", created),
+      icon: "i-lucide-check",
+    });
   } catch {
     toast.add({ title: t("calendar.errors.generic"), color: "error" });
   }

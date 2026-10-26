@@ -374,6 +374,7 @@
     "subtitle": "When you can play",
     "copyLastWeek": "Copy last week",
     "copied": "No slots to copy | Copied 1 slot | Copied {n} slots",
+    "copiedNothingNew": "Nothing new to copy",
     "empty": "You have no slots this month. Add when you can play and players can find you.",
     "loadError": "Couldn't load your slots. Check your connection and try again.",
     "dayEmpty": "No slots on this day yet.",
@@ -384,6 +385,14 @@
     "addSlot": "Add slot",
     "slotAdded": "Slot added",
     "removeSlot": "Remove slot",
+    "removeTitle": "Remove this slot?",
+    "removeDescription": "Pending requests for this slot will be declined.",
+    "removeKeep": "Keep slot",
+    "withPartner": "With {name}",
+    "phase": {
+      "inProgress": "In progress",
+      "finished": "Finished"
+    },
     "cancel": "Cancel",
     "cancelTitle": "Cancel this match?",
     "cancelDescription": "The other player is notified and the slot leaves your calendar.",
