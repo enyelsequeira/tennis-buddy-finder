@@ -257,6 +257,22 @@ describe("availability.remove / cancel", () => {
     expect(notes.map((n) => n.type)).toEqual(["request_declined", "request_declined"]);
   });
 
+  it("removing or cancelling an open slot clears the owner's request_received for it", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const asker = await createUser(t);
+    const removed = await createSlot(owner, tomorrow10);
+    const cancelled = await createSlot(owner, tomorrow10 + 2 * HOUR);
+    const kept = await createSlot(owner, tomorrow10 + 4 * HOUR);
+    await asker.as.mutation(api.matchRequests.send, { slotId: removed });
+    await asker.as.mutation(api.matchRequests.send, { slotId: cancelled });
+    const live = await asker.as.mutation(api.matchRequests.send, { slotId: kept });
+    await owner.as.mutation(api.availability.remove, { slotId: removed });
+    await owner.as.mutation(api.availability.cancel, { slotId: cancelled });
+    const notes = await owner.as.query(api.notifications.unread, {});
+    expect(notes.map((n) => [n.type, n.requestId])).toEqual([["request_received", live]]);
+  });
+
   it("a matched slot cannot be removed; cancelling it cancels the accepted request and notifies", async () => {
     const t = setup();
     const owner = await createUser(t);

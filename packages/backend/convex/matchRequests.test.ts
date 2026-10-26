@@ -197,6 +197,27 @@ describe("matchRequests.accept", () => {
     expect(await allConversations(t)).toHaveLength(0);
     expect(await a.as.query(api.notifications.unread, {})).toHaveLength(0);
   });
+
+  it("clears the owner's request_received for the accepted and auto-declined requests only", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const b = await createUser(t);
+    const slotId = await createSlot(owner);
+    const otherSlot = await createSlot(owner, tomorrow10 + 3 * HOUR);
+    const reqA = await a.as.mutation(api.matchRequests.send, { slotId });
+    const reqB = await b.as.mutation(api.matchRequests.send, { slotId });
+    const live = await b.as.mutation(api.matchRequests.send, { slotId: otherSlot });
+
+    await owner.as.mutation(api.matchRequests.accept, { requestId: reqA });
+
+    const notes = await owner.as.query(api.notifications.unread, {});
+    expect(notes.map((n) => [n.type, n.requestId])).toEqual([["request_received", live]]);
+    const aNotes = await a.as.query(api.notifications.unread, {});
+    expect(aNotes.map((n) => [n.type, n.requestId])).toEqual([["request_accepted", reqA]]);
+    const bNotes = await b.as.query(api.notifications.unread, {});
+    expect(bNotes.map((n) => [n.type, n.requestId])).toEqual([["request_declined", reqB]]);
+  });
 });
 
 describe("matchRequests.decline", () => {
@@ -220,6 +241,32 @@ describe("matchRequests.decline", () => {
     const notes = await a.as.query(api.notifications.unread, {});
     expect(notes).toHaveLength(1);
     expect(notes[0]).toMatchObject({ type: "request_declined", requestId: req });
+  });
+
+  it("clears the owner's request_received; a refused decline changes no notification", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const b = await createUser(t);
+    const slotId = await createSlot(owner);
+    const reqA = await a.as.mutation(api.matchRequests.send, { slotId });
+    const reqB = await b.as.mutation(api.matchRequests.send, { slotId });
+    await expect(b.as.mutation(api.matchRequests.decline, { requestId: reqA })).rejects.toThrow(
+      "FORBIDDEN",
+    );
+    const before = await owner.as.query(api.notifications.unread, {});
+    expect(before.map((n) => [n.type, n.requestId])).toEqual([
+      ["request_received", reqB],
+      ["request_received", reqA],
+    ]);
+    expect(await a.as.query(api.notifications.unread, {})).toHaveLength(0);
+
+    await owner.as.mutation(api.matchRequests.decline, { requestId: reqA });
+
+    const notes = await owner.as.query(api.notifications.unread, {});
+    expect(notes.map((n) => [n.type, n.requestId])).toEqual([["request_received", reqB]]);
+    const aNotes = await a.as.query(api.notifications.unread, {});
+    expect(aNotes.map((n) => [n.type, n.requestId])).toEqual([["request_declined", reqA]]);
   });
 });
 
