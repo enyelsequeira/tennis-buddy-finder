@@ -98,7 +98,10 @@ export default defineSchema({
     userAId: v.id("users"),
     userBId: v.id("users"),
     lastMessageAt: v.number(),
-  }).index("by_userAId_and_userBId", ["userAId", "userBId"]),
+  })
+    .index("by_userAId_and_userBId", ["userAId", "userBId"])
+    .index("by_userAId_and_lastMessageAt", ["userAId", "lastMessageAt"])
+    .index("by_userBId_and_lastMessageAt", ["userBId", "lastMessageAt"]),
 
   conversationMembers: defineTable({
     conversationId: v.id("conversations"),
@@ -146,5 +149,6 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_and_readAt", ["userId", "readAt"])
+    .index("by_userId_and_conversationId_and_readAt", ["userId", "conversationId", "readAt"])
     .index("by_requestId", ["requestId"]),
 });

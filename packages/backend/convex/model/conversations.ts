@@ -4,12 +4,14 @@ import type { MutationCtx } from "../_generated/server";
 import type { Ctx } from "./auth";
 import { isHiddenFrom } from "./blocks";
 import { fail } from "./errors";
-import { unreadNotifications } from "./notifications";
 
 export type Pair = { userId: Id<"users">; otherUserId: Id<"users"> };
 
-/** Unread notifications scanned when looking for a conversation's message notification. */
-const MAX_NOTIFICATIONS_SCANNED = 200;
+/**
+ * Unread notifications of one conversation read at once: at most one `new_message`
+ * plus one `request_accepted` per accepted match between the pair.
+ */
+const MAX_CONVERSATION_NOTIFICATIONS = 100;
 
 export async function getOrCreateConversation(ctx: MutationCtx, pair: Pair) {
   const [userAId, userBId] =
@@ -96,10 +98,17 @@ export async function unreadMessageNotifications(
   ctx: Ctx,
   options: { userId: Id<"users">; conversationId: Id<"conversations"> },
 ) {
-  const rows = await unreadNotifications(ctx, options.userId, MAX_NOTIFICATIONS_SCANNED);
-  return rows.filter(
-    (row) => row.type === "new_message" && row.conversationId === options.conversationId,
-  );
+  const rows = await ctx.db
+    .query("notifications")
+    .withIndex("by_userId_and_conversationId_and_readAt", (q) =>
+      q
+        .eq("userId", options.userId)
+        .eq("conversationId", options.conversationId)
+        .eq("readAt", undefined),
+    )
+    .take(MAX_CONVERSATION_NOTIFICATIONS);
+  // `request_accepted` rows carry the conversationId too.
+  return rows.filter((row) => row.type === "new_message");
 }
 
 /** Marks `userId`'s message notifications for this conversation as read. */
