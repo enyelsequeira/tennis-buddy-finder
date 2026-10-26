@@ -214,6 +214,7 @@ async function onSubmit({ data }: FormSubmitEvent<SlotInput>) {
           :search-input="false"
           clear
           :placeholder="t('slot.anyVenue')"
+          :aria-label="t('find.venue')"
           class="w-full"
         />
       </UFormField>
