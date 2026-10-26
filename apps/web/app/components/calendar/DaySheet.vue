@@ -25,7 +25,8 @@ const SLOT_ERROR_KEYS = {
 
 const { t } = useI18n();
 const toast = useToast();
-const { now, atTime, dayBounds, halfHours, formatTime } = useLisbonTime();
+const { atTime, dayBounds, halfHours, formatTime } = useLisbonTime();
+const now = useTimestamp({ interval: 30_000 });
 
 const {
   data: slots,
@@ -106,21 +107,35 @@ type SlotInput = z.output<typeof schema.value>;
 const state = reactive<Partial<SlotInput>>({ note: "" });
 
 const timeItems = computed(() =>
-  halfHours(props.day).map((at) => ({ value: at, label: formatTime(at) })),
+  halfHours(props.day).map((at) => ({ value: at, label: timeLabel(at, formatTime) })),
 );
 const startItems = computed(() =>
-  timeItems.value.slice(0, -1).filter(({ value }) => value > now()),
+  timeItems.value
+    .slice(0, -1)
+    .filter(
+      ({ value }) =>
+        value > now.value &&
+        !rows.value.some((slot) => slot.startAt <= value && value < slot.endAt),
+    ),
 );
-const endItems = computed(() =>
-  timeItems.value.slice(1).filter(({ value }) => value > (state.startAt ?? 0)),
-);
+const endItems = computed(() => {
+  const startAt = state.startAt ?? 0;
+  const latest = latestEnd(startAt, rows.value);
+  return timeItems.value.slice(1).filter(({ value }) => value > startAt && value <= latest);
+});
 
 // The list opens at 00:00, so start from the first free evening time instead.
 function defaultStart() {
   const evening = atTime({ dayMs: props.day, hour: 18 });
   return startItems.value.find(({ value }) => value >= evening)?.value;
 }
-state.startAt = defaultStart();
+// Keeps the picked times valid as the clock moves and the day's slots load or change.
+watchEffect(() => {
+  if (!startItems.value.some(({ value }) => value === state.startAt)) {
+    state.startAt = defaultStart();
+  }
+  if (!endItems.value.some(({ value }) => value === state.endAt)) state.endAt = undefined;
+});
 
 const { mutate: createSlot, isPending: isCreating } = useConvexMutation(api.availability.create);
 
