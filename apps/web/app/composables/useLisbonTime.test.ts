@@ -58,3 +58,22 @@ describe("halfHours", () => {
     expect(steps.at(-1)).toBe(Date.UTC(2026, 9, 26, 0));
   });
 });
+
+describe("formatWeekday", () => {
+  const saturday = Date.UTC(2026, 9, 24, 12);
+
+  test("Saturday in pt is Sáb", () => {
+    vi.stubGlobal("useI18n", () => ({ locale: { value: "pt" }, t: (key: string) => key }));
+    expect(useLisbonTime().formatWeekday(saturday)).toBe("Sáb");
+  });
+
+  test("Tuesday in pt is still Ter", () => {
+    vi.stubGlobal("useI18n", () => ({ locale: { value: "pt" }, t: (key: string) => key }));
+    expect(useLisbonTime().formatWeekday(Date.UTC(2026, 9, 20, 12))).toBe("Ter");
+  });
+
+  test("Saturday in en is Sat", () => {
+    vi.stubGlobal("useI18n", () => ({ locale: { value: "en" }, t: (key: string) => key }));
+    expect(useLisbonTime().formatWeekday(saturday)).toBe("Sat");
+  });
+});

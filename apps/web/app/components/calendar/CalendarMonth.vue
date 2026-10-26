@@ -12,6 +12,7 @@ const emit = defineEmits<{
   month: [startMs: number];
 }>();
 
+const { t } = useI18n();
 const { now, startOfDay, startOfMonth, toCalendarDate, startOfCalendarDay } = useLisbonTime();
 
 const daysWith = (status: "open" | "matched") =>
@@ -29,6 +30,8 @@ const matchedDays = computed(() => daysWith("matched"));
     :range="false"
     :multiple="false"
     prevent-deselect
+    :week-starts-on="1"
+    :calendar-label="t('pages.calendar.title')"
     :year-controls="false"
     :view-control="false"
     :model-value="toCalendarDate(day)"

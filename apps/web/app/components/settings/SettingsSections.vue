@@ -219,7 +219,11 @@ async function onUnblock(userId: Id<"users">) {
             {{ t("settings.appearance") }}
           </h2>
         </template>
-        <UColorModeSelect color="neutral" class="w-full sm:w-56" />
+        <UColorModeSelect
+          color="neutral"
+          class="w-full sm:w-56"
+          :aria-label="t('settings.appearance')"
+        />
       </UCard>
 
       <!-- Blocked players -->
