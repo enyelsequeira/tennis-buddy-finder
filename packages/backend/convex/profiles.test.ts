@@ -21,6 +21,21 @@ describe("ageOn", () => {
   it("does not count a birthday still to come this year", () => {
     expect(ageOn("2008-09-09", NOW)).toBe(17);
   });
+  it("counts the birthday from Lisbon midnight in summer (WEST)", () => {
+    expect(ageOn("2008-07-15", Date.UTC(2026, 6, 14, 23, 30))).toBe(18);
+    expect(ageOn("2008-07-15", Date.UTC(2026, 6, 14, 22, 59))).toBe(17);
+  });
+  it("counts the birthday from Lisbon midnight in winter (WET)", () => {
+    expect(ageOn("2008-01-15", Date.UTC(2026, 0, 15, 0, 0))).toBe(18);
+    expect(ageOn("2008-01-15", Date.UTC(2026, 0, 14, 23, 59))).toBe(17);
+  });
+  it("counts a leap-day birthday from 1 March in non-leap years", () => {
+    expect(ageOn("2008-02-29", Date.UTC(2026, 1, 28, 12))).toBe(17);
+    expect(ageOn("2008-02-29", Date.UTC(2026, 2, 1, 12))).toBe(18);
+  });
+  it("throws on an invalid ISO date", () => {
+    expect(() => ageOn("2008-02-30", NOW)).toThrow("Invalid ISO date");
+  });
 });
 
 describe("profiles.create", () => {
@@ -38,6 +53,14 @@ describe("profiles.create", () => {
     const t = setup();
     const u = await createUser(t);
     await expect(u.as.mutation(api.profiles.create, validInput)).rejects.toThrow("PROFILE_EXISTS");
+  });
+
+  it("accepts a user turning 18 today", async () => {
+    const t = setup();
+    const u = await createUser(t, { profile: false });
+    await u.as.mutation(api.profiles.create, { ...validInput, birthDate: "2008-09-08" });
+    const mine = await u.as.query(api.profiles.mine, {});
+    expect(mine.birthDate).toBe("2008-09-08");
   });
 
   it("rejects under 18", async () => {
