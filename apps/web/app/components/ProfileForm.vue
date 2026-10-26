@@ -11,6 +11,7 @@ import {
  * the fields, option lists and translated validation; the parent owns the
  * mutation. With `hideBirthDate` the birth date field is not rendered but the
  * value from `initial` stays in the state so the shared schema still passes.
+ * With `draftKey` the in-progress values are kept in sessionStorage (onboarding).
  */
 const props = defineProps<{
   initial?: Partial<ProfileInput>;
@@ -18,6 +19,7 @@ const props = defineProps<{
   pending?: boolean;
   disabled?: boolean;
   hideBirthDate?: boolean;
+  draftKey?: string;
 }>();
 
 const emit = defineEmits<{ submit: [input: ProfileInput] }>();
@@ -48,7 +50,7 @@ const languageItems = computed(() =>
   })),
 );
 
-const state = reactive<Partial<ProfileInput>>({
+const initialState: Partial<ProfileInput> = {
   displayName: props.initial?.displayName ?? "",
   birthDate: props.initial?.birthDate ?? "",
   gender: props.initial?.gender,
@@ -58,7 +60,16 @@ const state = reactive<Partial<ProfileInput>>({
   handedness: props.initial?.handedness,
   languages: [...(props.initial?.languages ?? ["pt"])],
   bio: props.initial?.bio ?? "",
-});
+};
+// The draft is read on mount (sessionStorage is client-only) so hydration matches the SSR markup.
+const state = props.draftKey
+  ? toReactive<Partial<ProfileInput>>(
+      useSessionStorage(props.draftKey, initialState, {
+        initOnMounted: true,
+        mergeDefaults: true,
+      }),
+    )
+  : reactive(initialState);
 
 const bioLength = computed(() => state.bio?.length ?? 0);
 

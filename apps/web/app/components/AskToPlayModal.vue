@@ -42,7 +42,10 @@ async function onSubmit({ data }: FormSubmitEvent<AskInput>) {
     open.value = false;
     toast.add({ title: t("ask.sent"), icon: "i-lucide-send" });
   } catch (error) {
-    toast.add({ title: t(`ask.errors.${convexErrorKey(error, ASK_ERROR_KEYS)}`), color: "error" });
+    const key = convexErrorKey(error, ASK_ERROR_KEYS);
+    toast.add({ title: t(`ask.errors.${key}`), color: "error" });
+    // The slot is gone, taken or over: nothing left to ask for.
+    if (key === "notFound" || key === "notOpen" || key === "inPast") open.value = false;
   }
 }
 </script>

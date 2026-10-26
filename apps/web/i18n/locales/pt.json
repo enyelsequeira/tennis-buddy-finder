@@ -475,6 +475,8 @@
     "notifications": "Notificações",
     "emailNotifications": "Notificações por email",
     "emailNotificationsHelp": "Recebe um email quando alguém te pede para jogar ou responde a um pedido teu.",
+    "emailNotificationsOn": "Vais receber emails",
+    "emailNotificationsOff": "Já não vais receber emails",
     "language": "Idioma",
     "languageHelp": "Escolhe o idioma da app.",
     "appearance": "Aspeto",

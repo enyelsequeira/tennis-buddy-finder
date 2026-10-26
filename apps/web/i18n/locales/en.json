@@ -475,6 +475,8 @@
     "notifications": "Notifications",
     "emailNotifications": "Email notifications",
     "emailNotificationsHelp": "Get an email when someone asks you to play or answers one of your requests.",
+    "emailNotificationsOn": "You'll get emails",
+    "emailNotificationsOff": "You won't get emails anymore",
     "language": "Language",
     "languageHelp": "Choose the app language.",
     "appearance": "Appearance",
