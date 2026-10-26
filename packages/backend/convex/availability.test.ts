@@ -20,6 +20,7 @@ type RawSlot = {
   userId: Id<"users">;
   startAt: number;
   status: Doc<"availabilitySlots">["status"];
+  venueId?: Id<"venues">;
 };
 
 /** Bypasses `create`'s checks, for slots in the past or in a non-open status. */
@@ -30,6 +31,19 @@ function insertSlot(t: T, slot: RawSlot) {
       endAt: slot.startAt + HOUR,
       district: "Coimbra",
       municipality: "Figueira da Foz",
+    }),
+  );
+}
+
+type VenueSlotIds = { userId: Id<"users">; venueId: Id<"venues"> };
+
+function insertVenue(t: T) {
+  return t.run(async (ctx) =>
+    ctx.db.insert("venues", {
+      name: "Clube",
+      district: "Coimbra",
+      municipality: "Figueira da Foz",
+      isActive: true,
     }),
   );
 }
@@ -167,6 +181,19 @@ describe("availability.create", () => {
         note: "x".repeat(201),
       }),
     ).rejects.toThrow("INVALID_NOTE");
+  });
+
+  it("accepts an active venue in the profile municipality", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    const venueId = await insertVenue(t);
+    const id = await u.as.mutation(api.availability.create, {
+      startAt: tomorrow10,
+      endAt: tomorrow10 + HOUR,
+      venueId,
+    });
+    const slot = await t.run(async (ctx) => ctx.db.get("availabilitySlots", id));
+    expect(slot?.venueId).toBe(venueId);
   });
 
   it("requires a profile", async () => {
@@ -347,6 +374,64 @@ describe("availability.copyLastWeek", () => {
     expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
     // Tue 30 Mar 18:00 WEST
     expect(await copiedStarts(t, a.userId, now)).toEqual([[Date.UTC(2027, 2, 30, 17), HOUR]]);
+  });
+
+  /** Copies a last-week slot at a fresh venue after `change`; returns the venue and the copy. */
+  async function copyVenueSlot(
+    change: (t: ReturnType<typeof setup>, ids: VenueSlotIds) => Promise<unknown>,
+  ) {
+    const t = setup();
+    const a = await createUser(t);
+    const venueId = await insertVenue(t);
+    const startAt = NOW - 7 * DAY + 2 * HOUR;
+    const originalId = await insertSlot(t, {
+      userId: a.userId,
+      startAt,
+      status: "expired",
+      venueId,
+    });
+    const before = await t.run(async (ctx) => ctx.db.get("availabilitySlots", originalId));
+    await change(t, { userId: a.userId, venueId });
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toBe(1);
+    const [original, copy] = await t.run(async (ctx) =>
+      ctx.db
+        .query("availabilitySlots")
+        .withIndex("by_userId_and_startAt", (q) => q.eq("userId", a.userId))
+        .collect(),
+    );
+    // The source slot is never rewritten.
+    expect(original).toEqual(before);
+    return { venueId, copy: copy! };
+  }
+
+  it("keeps an active venue in the profile municipality", async () => {
+    const { venueId, copy } = await copyVenueSlot(async () => {});
+    expect(copy.venueId).toBe(venueId);
+  });
+
+  it("drops a venue deactivated since last week but still copies the slot", async () => {
+    const { copy } = await copyVenueSlot((t, { venueId }) =>
+      t.run(async (ctx) => ctx.db.patch("venues", venueId, { isActive: false })),
+    );
+    expect(copy.venueId).toBeUndefined();
+    expect(copy.status).toBe("open");
+  });
+
+  it("drops the venue and uses the current location after the player moved", async () => {
+    const { copy } = await copyVenueSlot((t, { userId }) =>
+      t.run(async (ctx) => {
+        const profile = await ctx.db
+          .query("profiles")
+          .withIndex("by_userId", (q) => q.eq("userId", userId))
+          .unique();
+        await ctx.db.patch("profiles", profile!._id, {
+          district: "Lisboa",
+          municipality: "Lisboa",
+        });
+      }),
+    );
+    expect(copy.venueId).toBeUndefined();
+    expect([copy.district, copy.municipality]).toEqual(["Lisboa", "Lisboa"]);
   });
 });
 
