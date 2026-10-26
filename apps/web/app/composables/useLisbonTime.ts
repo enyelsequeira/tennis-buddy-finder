@@ -57,8 +57,11 @@ export function useLisbonTime() {
     dayjs.tz(lisbon(ms).add(days, "day").format("YYYY-MM-DDTHH:mm:ss.SSS"), LISBON_TZ).valueOf();
 
   /** The instant at which the Lisbon wall clock reads `hour:minute` on the given day. */
-  const atTime = ({ dayMs, hour, minute = 0 }: AtTimeOptions) =>
-    lisbon(dayMs).startOf("day").hour(hour).minute(minute).valueOf();
+  // Built from wall-clock text for the same reason as addDays: midnight's offset is wrong after a clock change.
+  const atTime = ({ dayMs, hour, minute = 0 }: AtTimeOptions) => {
+    const time = [hour, minute].map((part) => String(part).padStart(2, "0")).join(":");
+    return dayjs.tz(`${lisbon(dayMs).format("YYYY-MM-DD")}T${time}`, LISBON_TZ).valueOf();
+  };
 
   function timeOfDay(ms: number): TimeOfDay {
     const hour = lisbon(ms).hour();

@@ -8,7 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "dev:bare": "nuxt dev"
+    "dev:bare": "nuxt dev",
+    "test": "vitest run"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.12.5",
@@ -37,6 +38,7 @@
     "@tennis-buddy-finder/config": "workspace:*",
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",
+    "vitest": "^5.0.0",
     "vue-tsc": "^3.3.8"
   }
 }
