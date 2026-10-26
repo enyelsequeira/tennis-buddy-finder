@@ -387,12 +387,12 @@ describe("matchRequests.received", () => {
     await owner.as.mutation(api.matchRequests.accept, { requestId: requests[3]! });
   });
 
-  it("caps the merged list at 100, newest first", async () => {
+  it("caps the merged list at 100, keeping an old pending request ahead of newer handled ones", async () => {
     const t = setup();
     const owner = await createUser(t);
     const a = await createUser(t);
     const slotId = await createSlot(owner);
-    const statuses = ["pending", "accepted", "declined", "cancelled"] as const;
+    const handled = ["accepted", "declined", "cancelled"] as const;
     const ids = await t.run(async (ctx) => {
       const inserted = [];
       for (let i = 0; i < 101; i++) {
@@ -401,18 +401,19 @@ describe("matchRequests.received", () => {
             slotId,
             fromUserId: a.userId,
             toUserId: owner.userId,
-            status: statuses[i % 4]!,
+            // The oldest row is the only pending one.
+            status: i === 0 ? "pending" : handled[i % 3]!,
           }),
         );
       }
       return inserted;
     });
-    const newestFirst = ids.reverse().slice(0, 100);
+    const expected = [...ids.slice(1).reverse().slice(0, 99), ids[0]];
 
     const received = await owner.as.query(api.matchRequests.received, {});
-    expect(received.map((r) => r.request._id)).toEqual(newestFirst);
+    expect(received.map((r) => r.request._id)).toEqual(expected);
     const sent = await a.as.query(api.matchRequests.sent, {});
-    expect(sent.map((r) => r.request._id)).toEqual(newestFirst);
+    expect(sent.map((r) => r.request._id)).toEqual(expected);
   });
 
   it("hides handled requests from a player blocked in either direction", async () => {

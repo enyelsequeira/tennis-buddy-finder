@@ -15,6 +15,15 @@ const MAX_MESSAGE = 300;
 const MAX_LIST = 100;
 const REQUEST_STATUSES = ["pending", "accepted", "declined", "cancelled"] as const;
 
+/** The newest `MAX_LIST` requests, newest first; pending ones are kept first so the cap never drops one. */
+function capNewest(requests: Doc<"matchRequests">[]) {
+  const newest = (a: Doc<"matchRequests">, b: Doc<"matchRequests">) =>
+    b._creationTime - a._creationTime;
+  const isPending = (r: Doc<"matchRequests">) => Number(r.status === "pending");
+  requests.sort((a, b) => isPending(b) - isPending(a) || newest(a, b));
+  return requests.slice(0, MAX_LIST).sort(newest);
+}
+
 const requestView = v.object({
   request: schema.doc("matchRequests"),
   slot: slotDoc,
@@ -166,8 +175,7 @@ export const received = profileQuery({
         .take(MAX_LIST);
       requests.push(...rows);
     }
-    requests.sort((a, b) => b._creationTime - a._creationTime);
-    return toViews(ctx, { requests: requests.slice(0, MAX_LIST), player: "fromUserId" });
+    return toViews(ctx, { requests: capNewest(requests), player: "fromUserId" });
   },
 });
 
@@ -187,7 +195,6 @@ export const sent = profileQuery({
         .take(MAX_LIST);
       requests.push(...rows);
     }
-    requests.sort((a, b) => b._creationTime - a._creationTime);
-    return toViews(ctx, { requests: requests.slice(0, MAX_LIST), player: "toUserId" });
+    return toViews(ctx, { requests: capNewest(requests), player: "toUserId" });
   },
 });
