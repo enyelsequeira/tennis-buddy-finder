@@ -13,6 +13,7 @@ import schema from "./schema";
 
 const MAX_MESSAGE = 300;
 const MAX_LIST = 100;
+const REQUEST_STATUSES = ["pending", "accepted", "declined", "cancelled"] as const;
 
 const requestView = v.object({
   request: schema.doc("matchRequests"),
@@ -156,14 +157,17 @@ export const received = profileQuery({
   returns: v.array(requestView),
   handler: async (ctx) => {
     const { user } = ctx;
-    const requests = await ctx.db
-      .query("matchRequests")
-      .withIndex("by_toUserId_and_status", (q) =>
-        q.eq("toUserId", user._id).eq("status", "pending"),
-      )
-      .order("desc")
-      .take(MAX_LIST);
-    return toViews(ctx, { requests, player: "fromUserId" });
+    const requests = [];
+    for (const status of REQUEST_STATUSES) {
+      const rows = await ctx.db
+        .query("matchRequests")
+        .withIndex("by_toUserId_and_status", (q) => q.eq("toUserId", user._id).eq("status", status))
+        .order("desc")
+        .take(MAX_LIST);
+      requests.push(...rows);
+    }
+    requests.sort((a, b) => b._creationTime - a._creationTime);
+    return toViews(ctx, { requests: requests.slice(0, MAX_LIST), player: "fromUserId" });
   },
 });
 
@@ -173,7 +177,7 @@ export const sent = profileQuery({
   handler: async (ctx) => {
     const { user } = ctx;
     const requests = [];
-    for (const status of ["pending", "accepted", "declined"] as const) {
+    for (const status of REQUEST_STATUSES) {
       const rows = await ctx.db
         .query("matchRequests")
         .withIndex("by_fromUserId_and_status", (q) =>
@@ -184,6 +188,6 @@ export const sent = profileQuery({
       requests.push(...rows);
     }
     requests.sort((a, b) => b._creationTime - a._creationTime);
-    return toViews(ctx, { requests, player: "toUserId" });
+    return toViews(ctx, { requests: requests.slice(0, MAX_LIST), player: "toUserId" });
   },
 });
