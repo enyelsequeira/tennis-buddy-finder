@@ -3,7 +3,7 @@ import type { MutationCtx } from "../_generated/server";
 
 import type { Ctx } from "./auth";
 import type { Pair } from "./conversations";
-import { createNotification } from "./notifications";
+import { createNotification, deleteRequestNotifications } from "./notifications";
 
 const MAX_PENDING = 100;
 
@@ -12,6 +12,8 @@ export async function declineRequest(ctx: MutationCtx, request: Doc<"matchReques
     status: "declined",
     respondedAt: Date.now(),
   });
+  // A pending request only has the owner's request_received, which is now dead.
+  await deleteRequestNotifications(ctx, request._id);
   await createNotification(ctx, {
     userId: request.fromUserId,
     type: "request_declined",
@@ -64,6 +66,7 @@ export async function cancelPendingBetween(ctx: MutationCtx, pair: Pair) {
     for (const request of pending) {
       if (request.toUserId !== to) continue;
       await ctx.db.patch("matchRequests", request._id, { status: "cancelled", respondedAt });
+      await deleteRequestNotifications(ctx, request._id);
     }
   }
 }

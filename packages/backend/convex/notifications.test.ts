@@ -99,7 +99,8 @@ describe("notifications", () => {
     expect(await unreadTypes(me)).toEqual(ALL_TYPES);
 
     await me.as.mutation(api.blocks.unblock, { userId: iBlocked.userId });
-    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(8);
+    // The block cancelled iBlocked's pending request to me, dropping its request_received.
+    expect(await me.as.query(api.notifications.unread, {})).toHaveLength(7);
   });
 
   it("keeps notifications whose request or conversation points at a deleted player", async () => {
