@@ -13,6 +13,15 @@ export async function createNotification(ctx: MutationCtx, input: NotificationIn
   return ctx.db.insert("notifications", input);
 }
 
+/** Deletes every notification about `requestId`, read or not. */
+export async function deleteRequestNotifications(ctx: MutationCtx, requestId: Id<"matchRequests">) {
+  const rows = await ctx.db
+    .query("notifications")
+    .withIndex("by_requestId", (q) => q.eq("requestId", requestId))
+    .collect();
+  for (const row of rows) await ctx.db.delete("notifications", row._id);
+}
+
 /** Unread notifications of `userId`, newest first. */
 export async function unreadNotifications(ctx: Ctx, userId: Id<"users">, limit: number) {
   return ctx.db

@@ -6,7 +6,7 @@ import { getProfileForUser, profileMutation, profileQuery, type Ctx } from "./mo
 import { isBanned, isBlockedEitherWay, isHiddenFrom } from "./model/blocks";
 import { getOrCreateConversation } from "./model/conversations";
 import { fail } from "./model/errors";
-import { createNotification } from "./model/notifications";
+import { createNotification, deleteRequestNotifications } from "./model/notifications";
 import { playerCard, toPlayerCard } from "./model/playerCard";
 import { declinePendingForSlot, declineRequest, latestRequest } from "./model/requests";
 import schema from "./schema";
@@ -145,6 +145,8 @@ export const cancel = profileMutation({
       status: "cancelled",
       respondedAt: Date.now(),
     });
+    // A pending request only has the owner's request_received, so the owner keeps none for it.
+    await deleteRequestNotifications(ctx, request._id);
     return null;
   },
 });

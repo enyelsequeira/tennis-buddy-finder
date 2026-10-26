@@ -145,5 +145,6 @@ export default defineSchema({
     emailedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_and_readAt", ["userId", "readAt"]),
+    .index("by_userId_and_readAt", ["userId", "readAt"])
+    .index("by_requestId", ["requestId"]),
 });
