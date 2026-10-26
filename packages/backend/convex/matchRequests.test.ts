@@ -140,7 +140,11 @@ describe("matchRequests.accept", () => {
       [owner.userId, a.userId].sort().map((userId) => [conversationId, userId, NOW]),
     );
 
-    expect(await owner.as.query(api.matchRequests.received, {})).toHaveLength(0);
+    const received = await owner.as.query(api.matchRequests.received, {});
+    expect(received.map((r) => [r.request._id, r.request.status])).toEqual([
+      [reqB, "declined"],
+      [reqA, "accepted"],
+    ]);
     const sent = await a.as.query(api.matchRequests.sent, {});
     expect(sent.map((r) => r.request.status)).toEqual(["accepted"]);
   });
@@ -284,8 +288,10 @@ describe("matchRequests.cancel", () => {
     await expect(a.as.mutation(api.matchRequests.cancel, { requestId: req })).rejects.toThrow(
       "REQUEST_NOT_PENDING",
     );
-    expect(await owner.as.query(api.matchRequests.received, {})).toHaveLength(0);
-    expect(await a.as.query(api.matchRequests.sent, {})).toHaveLength(0);
+    const received = await owner.as.query(api.matchRequests.received, {});
+    expect(received.map((r) => r.request.status)).toEqual(["cancelled"]);
+    const sent = await a.as.query(api.matchRequests.sent, {});
+    expect(sent.map((r) => r.request.status)).toEqual(["cancelled"]);
     const notes = await owner.as.query(api.notifications.unread, {});
     expect(notes.map((n) => n.type)).toEqual([]);
   });
@@ -375,6 +381,108 @@ describe("matchRequests.sent", () => {
     const req = await a.as.mutation(api.matchRequests.send, { slotId });
     await owner.as.mutation(api.matchRequests.accept, { requestId: req });
     await owner.as.mutation(api.blocks.block, { userId: a.userId });
+    expect(await a.as.query(api.matchRequests.sent, {})).toHaveLength(0);
+  });
+
+  it("keeps cancelled requests next to pending and answered ones", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const requests = [];
+    for (const offset of [0, 2, 4, 6]) {
+      const slotId = await createSlot(owner, tomorrow10 + offset * HOUR);
+      requests.push(await a.as.mutation(api.matchRequests.send, { slotId }));
+    }
+    await owner.as.mutation(api.matchRequests.accept, { requestId: requests[0]! });
+    await owner.as.mutation(api.matchRequests.decline, { requestId: requests[1]! });
+    await a.as.mutation(api.matchRequests.cancel, { requestId: requests[2]! });
+
+    const sent = await a.as.query(api.matchRequests.sent, {});
+    expect(sent.map((r) => [r.request._id, r.request.status])).toEqual([
+      [requests[3], "pending"],
+      [requests[2], "cancelled"],
+      [requests[1], "declined"],
+      [requests[0], "accepted"],
+    ]);
+    // The pending one can still be cancelled.
+    await a.as.mutation(api.matchRequests.cancel, { requestId: requests[3]! });
+  });
+});
+
+describe("matchRequests.received", () => {
+  it("keeps handled requests with their status, newest first", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const requests = [];
+    for (const offset of [0, 2, 4, 6]) {
+      const slotId = await createSlot(owner, tomorrow10 + offset * HOUR);
+      requests.push(await a.as.mutation(api.matchRequests.send, { slotId }));
+    }
+    await owner.as.mutation(api.matchRequests.accept, { requestId: requests[0]! });
+    await owner.as.mutation(api.matchRequests.decline, { requestId: requests[1]! });
+    await a.as.mutation(api.matchRequests.cancel, { requestId: requests[2]! });
+
+    const received = await owner.as.query(api.matchRequests.received, {});
+    expect(received.map((r) => [r.request._id, r.request.status])).toEqual([
+      [requests[3], "pending"],
+      [requests[2], "cancelled"],
+      [requests[1], "declined"],
+      [requests[0], "accepted"],
+    ]);
+    // The pending one can still be accepted.
+    await owner.as.mutation(api.matchRequests.accept, { requestId: requests[3]! });
+  });
+
+  it("caps the merged list at 100, keeping an old pending request ahead of newer handled ones", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const slotId = await createSlot(owner);
+    const handled = ["accepted", "declined", "cancelled"] as const;
+    const ids = await t.run(async (ctx) => {
+      const inserted = [];
+      for (let i = 0; i < 101; i++) {
+        inserted.push(
+          await ctx.db.insert("matchRequests", {
+            slotId,
+            fromUserId: a.userId,
+            toUserId: owner.userId,
+            // The oldest row is the only pending one.
+            status: i === 0 ? "pending" : handled[i % 3]!,
+          }),
+        );
+      }
+      return inserted;
+    });
+    const expected = [...ids.slice(1).reverse().slice(0, 99), ids[0]];
+
+    const received = await owner.as.query(api.matchRequests.received, {});
+    expect(received.map((r) => r.request._id)).toEqual(expected);
+    const sent = await a.as.query(api.matchRequests.sent, {});
+    expect(sent.map((r) => r.request._id)).toEqual(expected);
+  });
+
+  it("hides handled requests from a player blocked in either direction", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const slotId = await createSlot(owner);
+    const req = await a.as.mutation(api.matchRequests.send, { slotId });
+    await owner.as.mutation(api.matchRequests.decline, { requestId: req });
+    await a.as.mutation(api.blocks.block, { userId: owner.userId });
+    expect(await owner.as.query(api.matchRequests.received, {})).toHaveLength(0);
+  });
+
+  it("skips requests whose slot was deleted", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const a = await createUser(t);
+    const slotId = await createSlot(owner);
+    const req = await a.as.mutation(api.matchRequests.send, { slotId });
+    await owner.as.mutation(api.matchRequests.decline, { requestId: req });
+    await t.run(async (ctx) => ctx.db.delete("availabilitySlots", slotId));
+    expect(await owner.as.query(api.matchRequests.received, {})).toHaveLength(0);
     expect(await a.as.query(api.matchRequests.sent, {})).toHaveLength(0);
   });
 });
