@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v, type Infer } from "convex/values";
 
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { getProfileForUser, profileMutation, profileQuery, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
@@ -49,6 +49,11 @@ async function getOwnSlot(ctx: Ctx, userId: Id<"users">, slotId: Id<"availabilit
   return slot;
 }
 
+async function isUsableVenue(ctx: Ctx, venueId: Id<"venues">, profile: Doc<"profiles">) {
+  const venue = await ctx.db.get("venues", venueId);
+  return !!venue && venue.isActive && venue.municipality === profile.municipality;
+}
+
 export const create = profileMutation({
   args: {
     startAt: v.number(),
@@ -61,11 +66,8 @@ export const create = profileMutation({
     const { user, profile } = ctx;
     validateRange(args);
     if (args.note !== undefined && args.note.length > MAX_NOTE) fail("INVALID_NOTE");
-    if (args.venueId !== undefined) {
-      const venue = await ctx.db.get("venues", args.venueId);
-      if (!venue || !venue.isActive || venue.municipality !== profile.municipality) {
-        fail("INVALID_VENUE");
-      }
+    if (args.venueId !== undefined && !(await isUsableVenue(ctx, args.venueId, profile))) {
+      fail("INVALID_VENUE");
     }
     if (await hasOverlap(ctx, { userId: user._id, startAt: args.startAt, endAt: args.endAt })) {
       fail("SLOT_OVERLAP");
@@ -158,7 +160,7 @@ export const copyLastWeek = profileMutation({
   args: {},
   returns: v.number(),
   handler: async (ctx) => {
-    const { user } = ctx;
+    const { user, profile } = ctx;
     const now = Date.now();
     // Rolling window: slots that started in the last 7 days, not the previous calendar week.
     const lastWeek = await ctx.db
@@ -184,9 +186,13 @@ export const copyLastWeek = profileMutation({
         userId: user._id,
         startAt,
         endAt,
-        district: slot.district,
-        municipality: slot.municipality,
-        venueId: slot.venueId,
+        district: profile.district,
+        municipality: profile.municipality,
+        // A venue closed or outside the player's current municipality is dropped, not the slot.
+        venueId:
+          slot.venueId !== undefined && (await isUsableVenue(ctx, slot.venueId, profile))
+            ? slot.venueId
+            : undefined,
         note: slot.note,
         status: "open",
       });
