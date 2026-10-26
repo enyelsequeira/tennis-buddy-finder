@@ -63,7 +63,7 @@
   },
   "player": {
     "ntrp": "NTRP {rating}",
-    "playingYears": "playing 0 years | playing 1 year | playing {n} years",
+    "playingYears": "just started | playing 1 year | playing {n} years",
     "formats": {
       "singles": "Singles",
       "doubles": "Doubles",
@@ -342,8 +342,8 @@
   },
   "notifications": {
     "title": "Notifications",
-    "titleUnread": "Unread notifications",
-    "unread": "unread",
+    "unreadCount": "{count} unread notification | {count} unread notification | {count} unread notifications",
+    "unread": "{count} unread",
     "empty": "You have no new notifications.",
     "loadError": "Couldn't load notifications. Check your connection and try again.",
     "types": {

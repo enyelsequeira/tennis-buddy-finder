@@ -40,5 +40,7 @@ export default defineNuxtConfig({
   },
   convex: {
     url: process.env.NUXT_PUBLIC_CONVEX_URL,
+    // Reuse the confirmed first token instead of fetching a second one right away (#17).
+    clientOptions: { initialAuthTokenReuse: true },
   },
 });

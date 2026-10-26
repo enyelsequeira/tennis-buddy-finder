@@ -22,7 +22,7 @@ const meta = computed(() =>
     <UAvatar
       :src="player.avatarUrl"
       :alt="player.displayName"
-      :text="player.displayName.charAt(0)"
+      :text="avatarInitial(player.displayName)"
       size="xl"
       class="shrink-0 bg-accented"
       :ui="{ fallback: 'text-muted font-semibold' }"

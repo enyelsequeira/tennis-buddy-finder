@@ -35,7 +35,7 @@ const stamp = computed(() =>
   >
     <UAvatar
       :alt="name"
-      :text="name.charAt(0)"
+      :text="avatarInitial(name)"
       size="lg"
       class="shrink-0 bg-accented"
       :ui="{ fallback: 'text-muted font-semibold' }"
@@ -57,7 +57,7 @@ const stamp = computed(() =>
         </span>
         <UBadge
           v-if="unread"
-          :label="unread > 9 ? '9+' : String(unread)"
+          :label="unreadBadge(unread)"
           color="primary"
           size="sm"
           class="ms-auto shrink-0 rounded-full"

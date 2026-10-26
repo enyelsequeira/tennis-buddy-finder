@@ -63,7 +63,7 @@
   },
   "player": {
     "ntrp": "NTRP {rating}",
-    "playingYears": "joga há 0 anos | joga há 1 ano | joga há {n} anos",
+    "playingYears": "começou agora | joga há 1 ano | joga há {n} anos",
     "formats": {
       "singles": "Singulares",
       "doubles": "Pares",
@@ -342,8 +342,8 @@
   },
   "notifications": {
     "title": "Notificações",
-    "titleUnread": "Notificações por ler",
-    "unread": "por ler",
+    "unreadCount": "{count} notificação por ler | {count} notificação por ler | {count} notificações por ler",
+    "unread": "{count} por ler",
     "empty": "Não tens notificações novas.",
     "loadError": "Não foi possível carregar as notificações. Verifica a ligação e tenta outra vez.",
     "types": {

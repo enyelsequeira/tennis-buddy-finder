@@ -2,7 +2,7 @@
 const { t } = useI18n();
 const route = useRoute();
 const localePath = useLocalePath();
-const { hasUnreadRequests, hasUnreadMessages } = useUnreadNotifications();
+const { unreadRequestCount, unreadMessageCount } = useUnreadNotifications();
 
 const tabs = computed(() => [
   { label: t("nav.find"), to: "/find", icon: "i-lucide-search" },
@@ -11,13 +11,13 @@ const tabs = computed(() => [
     label: t("nav.requests"),
     to: "/requests",
     icon: "i-lucide-inbox",
-    unread: hasUnreadRequests.value,
+    unread: unreadRequestCount.value,
   },
   {
     label: t("nav.messages"),
     to: "/messages",
     icon: "i-lucide-message-circle",
-    unread: hasUnreadMessages.value,
+    unread: unreadMessageCount.value,
   },
   { label: t("nav.me"), to: "/settings", icon: "i-lucide-user-round" },
 ]);
@@ -43,11 +43,17 @@ const inThread = computed(() => isActive("/messages") && Boolean(route.params.id
       :class="isActive(tab.to) ? 'text-primary' : 'text-dimmed'"
       :aria-current="isActive(tab.to) ? 'page' : undefined"
     >
-      <UChip color="warning" :show="!!tab.unread">
+      <UChip color="warning" size="3xl" :show="!!tab.unread" :ui="{ base: 'px-1' }">
         <UIcon :name="tab.icon" class="size-5" />
+        <!-- The sr-only text below says the count; hide the visual number. -->
+        <template #content>
+          <span aria-hidden="true">{{ unreadBadge(tab.unread ?? 0) }}</span>
+        </template>
       </UChip>
       {{ tab.label }}
-      <span v-if="tab.unread" class="sr-only">{{ t("notifications.unread") }}</span>
+      <span v-if="tab.unread" class="sr-only">{{
+        t("notifications.unread", { count: tab.unread })
+      }}</span>
     </ULink>
   </nav>
 </template>
