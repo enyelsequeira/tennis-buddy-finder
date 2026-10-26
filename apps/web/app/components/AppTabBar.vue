@@ -43,15 +43,12 @@ const inThread = computed(() => isActive("/messages") && Boolean(route.params.id
       :class="isActive(tab.to) ? 'text-primary' : 'text-dimmed'"
       :aria-current="isActive(tab.to) ? 'page' : undefined"
     >
-      <UChip
-        color="warning"
-        size="3xl"
-        :show="!!tab.unread"
-        aria-hidden="true"
-        :text="unreadBadge(tab.unread ?? 0)"
-        :ui="{ base: 'px-1' }"
-      >
+      <UChip color="warning" size="3xl" :show="!!tab.unread" :ui="{ base: 'px-1' }">
         <UIcon :name="tab.icon" class="size-5" />
+        <!-- The sr-only text below says the count; hide the visual number. -->
+        <template #content>
+          <span aria-hidden="true">{{ unreadBadge(tab.unread ?? 0) }}</span>
+        </template>
       </UChip>
       {{ tab.label }}
       <span v-if="tab.unread" class="sr-only">{{

@@ -60,14 +60,12 @@ const displayName = computed(() => me.value?.profile?.displayName ?? me.value?.u
       :ui="{ link: 'data-[active=true]:bg-primary/10 data-[active=true]:text-primary' }"
     >
       <template #unread-trailing="{ index }">
-        <UChip
-          standalone
-          color="warning"
-          size="3xl"
-          aria-hidden="true"
-          :text="unreadBadge(items[index]?.unread)"
-          :ui="{ base: 'px-1' }"
-        />
+        <UChip standalone color="warning" size="3xl" :ui="{ base: 'px-1' }">
+          <!-- The sr-only text below says the count; hide the visual number. -->
+          <template #content>
+            <span aria-hidden="true">{{ unreadBadge(items[index]?.unread) }}</span>
+          </template>
+        </UChip>
         <span class="sr-only">{{
           t("notifications.unread", { count: items[index]?.unread })
         }}</span>
