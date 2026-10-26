@@ -346,6 +346,7 @@
     "unread": "{count} por ler",
     "empty": "Não tens notificações novas.",
     "loadError": "Não foi possível carregar as notificações. Verifica a ligação e tenta outra vez.",
+    "toastRegion": "Notificações ({hotkey})",
     "types": {
       "request_received": "Tens um novo pedido para jogar.",
       "request_accepted": "O teu pedido para jogar foi aceite.",
@@ -447,6 +448,8 @@
       "evening": "Fim de tarde"
     },
     "ntrpRange": "NTRP {min}–{max}",
+    "ntrpMin": "Mínimo",
+    "ntrpMax": "Máximo",
     "format": "Formato",
     "venue": "Campo",
     "emptyTitle": "Ainda ninguém está livre neste dia.",
@@ -529,5 +532,12 @@
     "sentAt": "Enviada às {time}",
     "fromThem": "{name} às {time}",
     "threadLabel": "Mensagens com {name}"
+  },
+  "errorPage": {
+    "notFoundTitle": "Página não encontrada",
+    "notFoundDescription": "A página que procuras não existe ou mudou de endereço.",
+    "title": "Algo correu mal",
+    "description": "Aconteceu um erro inesperado. Tenta outra vez daqui a pouco.",
+    "home": "Voltar ao início"
   }
 }

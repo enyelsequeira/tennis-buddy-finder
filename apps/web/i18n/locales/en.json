@@ -346,6 +346,7 @@
     "unread": "{count} unread",
     "empty": "You have no new notifications.",
     "loadError": "Couldn't load notifications. Check your connection and try again.",
+    "toastRegion": "Notifications ({hotkey})",
     "types": {
       "request_received": "You have a new request to play.",
       "request_accepted": "Your request to play was accepted.",
@@ -447,6 +448,8 @@
       "evening": "Evening"
     },
     "ntrpRange": "NTRP {min}–{max}",
+    "ntrpMin": "Minimum",
+    "ntrpMax": "Maximum",
     "format": "Format",
     "venue": "Venue",
     "emptyTitle": "No one is free on this day yet.",
@@ -529,5 +532,12 @@
     "sentAt": "Sent at {time}",
     "fromThem": "{name} at {time}",
     "threadLabel": "Messages with {name}"
+  },
+  "errorPage": {
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The page you are looking for does not exist or has moved.",
+    "title": "Something went wrong",
+    "description": "An unexpected error happened. Try again in a moment.",
+    "home": "Back to home"
   }
 }
