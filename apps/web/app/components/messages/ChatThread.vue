@@ -271,7 +271,7 @@ async function confirmBlock() {
         >
           <UAvatar
             :alt="name"
-            :text="name.charAt(0)"
+            :text="avatarInitial(name)"
             size="md"
             class="shrink-0 bg-accented"
             :ui="{ fallback: 'text-muted font-semibold' }"

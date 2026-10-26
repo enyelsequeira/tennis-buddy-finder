@@ -89,9 +89,17 @@ watch([open, unread], async ([isOpen, list], [wasOpen]) => {
         color="neutral"
         variant="ghost"
         class="size-11 justify-center"
-        :aria-label="unread?.length ? t('notifications.titleUnread') : t('notifications.title')"
+        :aria-label="
+          unread?.length ? t('notifications.unreadCount', unread.length) : t('notifications.title')
+        "
       >
-        <UChip color="warning" :show="!!unread?.length">
+        <UChip
+          color="warning"
+          size="3xl"
+          :show="!!unread?.length"
+          :text="unreadBadge(unread?.length ?? 0)"
+          :ui="{ base: 'px-1' }"
+        >
           <UIcon name="i-lucide-bell" class="size-5" />
         </UChip>
       </UButton>

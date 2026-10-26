@@ -36,10 +36,9 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
 
   function fetchAccessToken({ forceRefreshToken }: FetchTokenOptions): Promise<string | null> {
-    if (!forceRefreshToken) {
-      if (cachedToken) return Promise.resolve(cachedToken);
-      if (pendingToken) return pendingToken;
-    }
+    // A forced refresh while a request is in flight reuses it: that token is just as fresh.
+    if (pendingToken) return pendingToken;
+    if (!forceRefreshToken && cachedToken) return Promise.resolve(cachedToken);
     pendingToken = requestToken().finally(() => {
       pendingToken = null;
     });

@@ -131,7 +131,7 @@ async function confirmBlock() {
       <div class="flex items-start gap-4">
         <UAvatar
           :alt="profile.displayName"
-          :text="profile.displayName.charAt(0)"
+          :text="avatarInitial(profile.displayName)"
           class="shrink-0 bg-accented"
           :ui="{ root: 'size-18 text-3xl', fallback: 'text-muted font-semibold' }"
         />
