@@ -8,6 +8,7 @@ import {
   notificationTypeValidator,
   reportReasonValidator,
   reportStatusValidator,
+  requestReasonValidator,
   requestStatusValidator,
   roleValidator,
   slotStatusValidator,
@@ -86,6 +87,7 @@ export default defineSchema({
     toUserId: v.id("users"),
     message: v.optional(v.string()),
     status: requestStatusValidator,
+    reason: v.optional(requestReasonValidator),
     respondedAt: v.optional(v.number()),
     /** Set when the request is accepted and a conversation opens. */
     conversationId: v.optional(v.id("conversations")),

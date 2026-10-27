@@ -38,6 +38,9 @@ export const requestStatusValidator = v.union(
   v.literal("cancelled"),
 );
 
+/** Why a request was declined when the owner did not decline it. */
+export const requestReasonValidator = v.union(v.literal("slot_taken"));
+
 export const reportReasonValidator = v.union(
   v.literal("harassment"),
   v.literal("inappropriate"),
@@ -56,6 +59,7 @@ export const notificationTypeValidator = v.union(
   v.literal("request_received"),
   v.literal("request_accepted"),
   v.literal("request_declined"),
+  v.literal("slot_taken"),
   v.literal("new_message"),
 );
 

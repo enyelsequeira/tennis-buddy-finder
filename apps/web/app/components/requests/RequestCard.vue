@@ -78,7 +78,11 @@ async function respond(action: Action) {
       <ULink :to="localePath(`/players/${view.player.userId}`)" class="min-w-0">
         <PlayerIdentity :player="player" :venue="venue" />
       </ULink>
-      <RequestStatusBadge :status="view.request.status" class="shrink-0" />
+      <RequestStatusBadge
+        :status="view.request.status"
+        :reason="view.request.reason"
+        class="shrink-0"
+      />
     </div>
 
     <div>

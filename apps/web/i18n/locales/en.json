@@ -77,6 +77,9 @@
       "declined": "Declined",
       "cancelled": "Cancelled"
     },
+    "reason": {
+      "slot_taken": "Slot taken"
+    },
     "tabs": {
       "received": "Received",
       "receivedCount": "Received · {count}",
@@ -351,6 +354,7 @@
       "request_received": "You have a new request to play.",
       "request_accepted": "Your request to play was accepted.",
       "request_declined": "Your request to play was declined.",
+      "slot_taken": "The slot you asked for was taken by another player.",
       "new_message": "You have a new message."
     }
   },

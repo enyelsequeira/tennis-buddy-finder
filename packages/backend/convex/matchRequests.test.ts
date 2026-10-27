@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
-import { createSlot, createUser, HOUR, NOW, setup, type T, tomorrow10 } from "./test.helpers";
+import { ban, createSlot, createUser, HOUR, NOW, setup, type T, tomorrow10 } from "./test.helpers";
 
 function allConversations(t: T) {
   return t.run(async (ctx) => ctx.db.query("conversations").take(10));
@@ -133,7 +133,7 @@ describe("matchRequests.accept", () => {
     expect(aNotes).toHaveLength(1);
     expect(aNotes[0]).toMatchObject({ type: "request_accepted", requestId: reqA, conversationId });
     const bNotes = await b.as.query(api.notifications.unread, {});
-    expect(bNotes.map((n) => n.type)).toEqual(["request_declined"]);
+    expect(bNotes.map((n) => n.type)).toEqual(["slot_taken"]);
 
     const members = await t.run(async (ctx) => ctx.db.query("conversationMembers").take(10));
     expect(members.map((m) => [m.conversationId, m.userId, m.lastReadAt])).toEqual(
@@ -220,7 +220,51 @@ describe("matchRequests.accept", () => {
     const aNotes = await a.as.query(api.notifications.unread, {});
     expect(aNotes.map((n) => [n.type, n.requestId])).toEqual([["request_accepted", reqA]]);
     const bNotes = await b.as.query(api.notifications.unread, {});
-    expect(bNotes.map((n) => [n.type, n.requestId])).toEqual([["request_declined", reqB]]);
+    expect(bNotes.map((n) => [n.type, n.requestId])).toEqual([["slot_taken", reqB]]);
+  });
+
+  it("tells the other pending requesters the slot was taken", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const b = await createUser(t);
+    const c = await createUser(t);
+    const slotId = await createSlot(owner);
+    const otherSlot = await createSlot(owner, tomorrow10 + 3 * HOUR);
+    const reqB = await b.as.mutation(api.matchRequests.send, { slotId });
+    const reqC = await c.as.mutation(api.matchRequests.send, { slotId });
+    const live = await c.as.mutation(api.matchRequests.send, { slotId: otherSlot });
+
+    await owner.as.mutation(api.matchRequests.accept, { requestId: reqB });
+
+    const [rowB, rowC, rowLive] = await t.run(async (ctx) =>
+      Promise.all([reqB, reqC, live].map((id) => ctx.db.get("matchRequests", id))),
+    );
+    expect(rowC).toMatchObject({ status: "declined", reason: "slot_taken", respondedAt: NOW });
+    expect(rowB?.reason).toBeUndefined();
+    expect(rowLive).toMatchObject({ status: "pending" });
+    expect(rowLive?.reason).toBeUndefined();
+    const cNotes = await c.as.query(api.notifications.unread, {});
+    expect(cNotes.map((n) => [n.type, n.requestId])).toEqual([["slot_taken", reqC]]);
+    const sent = await c.as.query(api.matchRequests.sent, {});
+    expect(sent.map((r) => [r.request._id, r.request.status, r.request.reason])).toEqual([
+      [live, "pending", undefined],
+      [reqC, "declined", "slot_taken"],
+    ]);
+  });
+
+  it("hides the slot_taken notification once the owner is banned", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const b = await createUser(t);
+    const c = await createUser(t);
+    const slotId = await createSlot(owner);
+    const reqB = await b.as.mutation(api.matchRequests.send, { slotId });
+    await c.as.mutation(api.matchRequests.send, { slotId });
+    await owner.as.mutation(api.matchRequests.accept, { requestId: reqB });
+    expect(await c.as.query(api.notifications.unread, {})).toHaveLength(1);
+
+    await ban(t, owner.userId);
+    expect(await c.as.query(api.notifications.unread, {})).toHaveLength(0);
   });
 });
 
@@ -241,6 +285,7 @@ describe("matchRequests.decline", () => {
 
     const sent = await a.as.query(api.matchRequests.sent, {});
     expect(sent.map((r) => r.request.status)).toEqual(["declined"]);
+    expect(sent[0]?.request.reason).toBeUndefined();
     expect(sent[0]?.slot.status).toBe("open");
     const notes = await a.as.query(api.notifications.unread, {});
     expect(notes).toHaveLength(1);
