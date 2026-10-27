@@ -17,9 +17,9 @@ import {
   week,
 } from "./test.helpers";
 
-/** A Better Auth `user` doc, as the component passes it to the triggers. */
 type T = ReturnType<typeof setup>;
 
+/** A Better Auth `user` doc, as the component passes it to the triggers. */
 function authDoc(authId: string, overrides: { name?: string; email?: string } = {}) {
   return {
     _id: authId,
