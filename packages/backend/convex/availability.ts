@@ -21,6 +21,32 @@ const MAX_SEARCH_PAGE = 100;
 
 type SlotRange = { startAt: number; endAt: number };
 
+/** Every status but "cancelled": the slots that still occupy their time. */
+const LIVE_SLOT_STATUSES = ["open", "matched", "expired"] as const;
+
+/**
+ * The user's live slots starting strictly between `after` and `before`, oldest first. Queried per
+ * status so cancelled rows can't use up the `take()` limit.
+ */
+async function liveSlotsStartingBetween(
+  ctx: Ctx,
+  userId: Id<"users">,
+  after: number,
+  before: number,
+) {
+  const perStatus = await Promise.all(
+    LIVE_SLOT_STATUSES.map((status) =>
+      ctx.db
+        .query("availabilitySlots")
+        .withIndex("by_userId_and_status_and_startAt", (q) =>
+          q.eq("userId", userId).eq("status", status).gt("startAt", after).lt("startAt", before),
+        )
+        .take(MAX_SLOTS_PER_QUERY),
+    ),
+  );
+  return perStatus.flat().sort((a, b) => a.startAt - b.startAt);
+}
+
 function validateRange({ startAt, endAt }: SlotRange) {
   if (endAt <= startAt) fail("SLOT_INVALID_RANGE");
   if (!isOnSlotGrid(startAt) || !isOnSlotGrid(endAt)) fail("SLOT_NOT_ON_GRID");
@@ -30,16 +56,13 @@ function validateRange({ startAt, endAt }: SlotRange) {
 
 async function hasOverlap(ctx: Ctx, slot: SlotRange & { userId: Id<"users"> }) {
   // Slots last at most MAX_SLOT_MS, so anything overlapping starts within that much of `startAt`.
-  const candidates = await ctx.db
-    .query("availabilitySlots")
-    .withIndex("by_userId_and_startAt", (q) =>
-      q
-        .eq("userId", slot.userId)
-        .gt("startAt", slot.startAt - MAX_SLOT_MS)
-        .lt("startAt", slot.endAt),
-    )
-    .take(MAX_SLOTS_PER_QUERY);
-  return candidates.some((other) => other.status !== "cancelled" && other.endAt > slot.startAt);
+  const candidates = await liveSlotsStartingBetween(
+    ctx,
+    slot.userId,
+    slot.startAt - MAX_SLOT_MS,
+    slot.endAt,
+  );
+  return candidates.some((other) => other.endAt > slot.startAt);
 }
 
 async function getOwnSlot(ctx: Ctx, userId: Id<"users">, slotId: Id<"availabilitySlots">) {
@@ -135,12 +158,22 @@ export const mine = profileQuery({
   ),
   handler: async (ctx, args) => {
     const { user } = ctx;
-    const slots = await ctx.db
-      .query("availabilitySlots")
-      .withIndex("by_userId_and_startAt", (q) =>
-        q.eq("userId", user._id).gte("startAt", args.from).lt("startAt", args.to),
-      )
-      .take(MAX_SLOTS_PER_QUERY);
+    // Per status, so cancelled rows can't push live slots past the `take()` limit.
+    const perStatus = await Promise.all(
+      [...LIVE_SLOT_STATUSES, "cancelled" as const].map((status) =>
+        ctx.db
+          .query("availabilitySlots")
+          .withIndex("by_userId_and_status_and_startAt", (q) =>
+            q
+              .eq("userId", user._id)
+              .eq("status", status)
+              .gte("startAt", args.from)
+              .lt("startAt", args.to),
+          )
+          .take(MAX_SLOTS_PER_QUERY),
+      ),
+    );
+    const slots = perStatus.flat().sort((a, b) => a.startAt - b.startAt);
     async function loadPartner(slot: Doc<"availabilitySlots">) {
       if (slot.status !== "matched") return undefined;
       const accepted = await ctx.db
@@ -161,13 +194,12 @@ export const listOpenForUser = profileQuery({
   handler: async (ctx, args) => {
     const { user } = ctx;
     if (await isHiddenFrom(ctx, user._id, args.userId)) return [];
-    const slots = await ctx.db
+    return ctx.db
       .query("availabilitySlots")
-      .withIndex("by_userId_and_startAt", (q) =>
-        q.eq("userId", args.userId).gt("startAt", Date.now()),
+      .withIndex("by_userId_and_status_and_startAt", (q) =>
+        q.eq("userId", args.userId).eq("status", "open").gt("startAt", Date.now()),
       )
       .take(MAX_SLOTS_PER_QUERY);
-    return slots.filter((slot) => slot.status === "open");
   },
 });
 
@@ -178,20 +210,14 @@ export const copyLastWeek = profileMutation({
     const { user, profile } = ctx;
     const now = Date.now();
     // Rolling window: slots that started in the last 7 days, not the previous calendar week.
-    const lastWeek = await ctx.db
-      .query("availabilitySlots")
-      .withIndex("by_userId_and_startAt", (q) =>
-        q
-          .eq("userId", user._id)
-          .gt("startAt", now - 7 * DAY)
-          .lt("startAt", now),
-      )
-      .take(MAX_SLOTS_PER_QUERY);
+    const lastWeek = (await liveSlotsStartingBetween(ctx, user._id, now - 7 * DAY, now)).slice(
+      0,
+      MAX_SLOTS_PER_QUERY,
+    );
     let created = 0;
     // Lets the client tell "already copied" apart from "nothing to copy".
     let skipped = 0;
     for (const slot of lastWeek) {
-      if (slot.status === "cancelled") continue;
       // Same Lisbon wall-clock time a week later, so copies across a DST change keep their hour.
       const startAt = addLisbonDays(slot.startAt, 7);
       // Keeping the duration avoids inverted or over-long slots when one spans the clock change.

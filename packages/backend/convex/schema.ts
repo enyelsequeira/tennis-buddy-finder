@@ -73,6 +73,7 @@ export default defineSchema({
     status: slotStatusValidator,
   })
     .index("by_userId_and_startAt", ["userId", "startAt"])
+    .index("by_userId_and_status_and_startAt", ["userId", "status", "startAt"])
     .index("by_municipality_and_status_and_startAt", ["municipality", "status", "startAt"])
     .index("by_status_and_startAt", ["status", "startAt"]),
 

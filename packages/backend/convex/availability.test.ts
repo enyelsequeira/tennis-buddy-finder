@@ -35,6 +35,22 @@ function insertSlot(t: T, slot: RawSlot) {
   );
 }
 
+/** One more cancelled slot than a single `take()` returns, starting 1 s apart from `firstStart`. */
+function insertCancelledFlood(t: T, userId: Id<"users">, firstStart: number) {
+  return t.run(async (ctx) => {
+    for (let i = 0; i < 201; i++) {
+      await ctx.db.insert("availabilitySlots", {
+        userId,
+        startAt: firstStart + i * 1000,
+        endAt: firstStart + i * 1000 + HOUR,
+        district: "Coimbra",
+        municipality: "Figueira da Foz",
+        status: "cancelled",
+      });
+    }
+  });
+}
+
 type VenueSlotIds = { userId: Id<"users">; venueId: Id<"venues"> };
 
 function insertVenue(t: T) {
@@ -144,6 +160,34 @@ describe("availability.create", () => {
     const id = await createSlot(u, tomorrow10);
     await u.as.mutation(api.availability.cancel, { slotId: id });
     await createSlot(u, tomorrow10);
+  });
+
+  it("rejects an overlap behind more cancelled slots than one take() returns", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    await insertCancelledFlood(t, u.userId, tomorrow10 - 5 * HOUR);
+    await createSlot(u, tomorrow10);
+    await expect(createSlot(u, tomorrow10)).rejects.toThrow("SLOT_OVERLAP");
+    const slots = await t.run(async (ctx) =>
+      ctx.db
+        .query("availabilitySlots")
+        .withIndex("by_userId_and_startAt", (q) => q.eq("userId", u.userId))
+        .collect(),
+    );
+    expect(slots.filter((s) => s.status !== "cancelled")).toHaveLength(1);
+  });
+
+  it("matched and expired slots block an overlap behind cancelled ones; touching slots are allowed", async () => {
+    const t = setup();
+    const u = await createUser(t);
+    // Inside the overlap window of both the matched and the expired slot below.
+    await insertCancelledFlood(t, u.userId, tomorrow10 - 3 * HOUR);
+    await insertSlot(t, { userId: u.userId, startAt: tomorrow10, status: "matched" });
+    await insertSlot(t, { userId: u.userId, startAt: tomorrow10 + 2 * HOUR, status: "expired" });
+    await expect(createSlot(u, tomorrow10)).rejects.toThrow("SLOT_OVERLAP");
+    await expect(createSlot(u, tomorrow10 + 2 * HOUR)).rejects.toThrow("SLOT_OVERLAP");
+    await createSlot(u, tomorrow10 + HOUR);
+    await createSlot(u, tomorrow10 + 3 * HOUR);
   });
 
   it("rejects an inactive venue, a venue elsewhere and a long note", async () => {
@@ -307,6 +351,17 @@ describe("availability.mine", () => {
     expect(mine.map((s) => s.startAt)).toEqual([tomorrow10, tomorrow10 + 2 * DAY]);
   });
 
+  it("returns my live slots behind more cancelled slots than one take() returns", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    await insertCancelledFlood(t, a.userId, NOW + HOUR);
+    await createSlot(a, tomorrow10);
+    const mine = await a.as.query(api.availability.mine, week);
+    expect(mine.filter((s) => s.status !== "cancelled").map((s) => s.startAt)).toEqual([
+      tomorrow10,
+    ]);
+  });
+
   it("names the accepted partner on my matched slots only, unless they are hidden from me", async () => {
     const t = setup();
     const owner = await createUser(t);
@@ -355,6 +410,17 @@ describe("availability.listOpenForUser", () => {
       0,
     );
   });
+
+  it("lists an open slot behind more cancelled slots than one take() returns", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    const b = await createUser(t);
+    await insertCancelledFlood(t, a.userId, NOW + HOUR);
+    await insertSlot(t, { userId: a.userId, startAt: tomorrow10 - 2 * HOUR, status: "matched" });
+    await createSlot(a, tomorrow10);
+    const open = await b.as.query(api.availability.listOpenForUser, { userId: a.userId });
+    expect(open.map((s) => s.startAt)).toEqual([tomorrow10]);
+  });
 });
 
 describe("availability.copyLastWeek", () => {
@@ -386,6 +452,19 @@ describe("availability.copyLastWeek", () => {
       created: 0,
       skipped: 2,
     });
+  });
+
+  it("copies a slot behind more cancelled slots than one take() returns", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    const lastTue14 = NOW - 7 * DAY + 2 * HOUR;
+    await insertCancelledFlood(t, a.userId, lastTue14 - HOUR);
+    await insertSlot(t, { userId: a.userId, startAt: lastTue14, status: "expired" });
+    expect(await a.as.mutation(api.availability.copyLastWeek, {})).toEqual({
+      created: 1,
+      skipped: 0,
+    });
+    expect(await copiedStarts(t, a.userId, NOW)).toEqual([[NOW + 2 * HOUR, HOUR]]);
   });
 
   it("reports nothing created or skipped when last week had no slots", async () => {
