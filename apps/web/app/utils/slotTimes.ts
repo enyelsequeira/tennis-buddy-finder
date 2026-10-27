@@ -12,6 +12,9 @@ export const latestEnd = (startAt: number, slots: TimeRange[]) =>
 export const slotPhase = (slot: TimeRange, now: number) =>
   slot.endAt <= now ? "finished" : slot.startAt <= now ? "inProgress" : "upcoming";
 
+/** Whether `slot` can still be asked for at `now`: it hasn't started yet. */
+export const isUpcoming = (slot: TimeRange, now: number) => slotPhase(slot, now) === "upcoming";
+
 /** "HH:mm", plus the zone for the hour Lisbon's autumn clock change repeats: "01:00 (WEST)" / "01:00 (WET)". */
 export function timeLabel(at: number, formatTime: (ms: number) => string) {
   const label = formatTime(at);

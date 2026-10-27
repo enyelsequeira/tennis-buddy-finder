@@ -59,6 +59,9 @@ const {
   paginationOpts: { numItems: pageSize.value, cursor: null },
 }));
 
+// The query only re-runs when data changes, so drop slots that started since on a ticking clock.
+const clock = useTimestamp({ interval: 30_000 });
+
 // The rail's dots need the whole week, so the page grows until the query is done.
 watch(results, (value) => {
   if (value && !value.isDone) pageSize.value = Math.min(pageSize.value * 2, MAX_PAGE_SIZE);
@@ -68,6 +71,7 @@ const slotsByDay = computed(() => {
   const time = filters.value.timeOfDay;
   const map = new Map<number, OpenSlot[]>();
   for (const { slot, player } of results.value?.page ?? []) {
+    if (!isUpcoming(slot, clock.value)) continue;
     if (time !== "any" && timeOfDay(slot.startAt) !== time) continue;
     const day = startOfDay(slot.startAt);
     map.set(day, [...(map.get(day) ?? []), toOpenSlot({ slot, player, venues: venues.value })]);
