@@ -60,6 +60,7 @@ export const notificationTypeValidator = v.union(
   v.literal("request_accepted"),
   v.literal("request_declined"),
   v.literal("slot_taken"),
+  v.literal("match_cancelled"),
   v.literal("new_message"),
 );
 

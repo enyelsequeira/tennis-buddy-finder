@@ -144,7 +144,7 @@ describe("auth.onDelete", () => {
     expect((await get(t, "matchRequests", matchedWithA.requestId))?.status).toBe("cancelled");
     expect(
       (await notificationsOf(t, a.userId)).some(
-        (n) => n.type === "request_declined" && n.requestId === matchedWithA.requestId,
+        (n) => n.type === "match_cancelled" && n.requestId === matchedWithA.requestId,
       ),
     ).toBe(true);
     // B's pending request to C is cancelled and C's request_received for it is gone.

@@ -8,6 +8,7 @@ const ICONS = {
   request_accepted: "i-lucide-check",
   request_declined: "i-lucide-x",
   slot_taken: "i-lucide-calendar-x",
+  match_cancelled: "i-lucide-calendar-off",
   new_message: "i-lucide-message-circle",
 } satisfies Record<Doc<"notifications">["type"], string>;
 
