@@ -86,6 +86,12 @@ pnpm run dev
 
 The web app is at [http://localhost:3001](http://localhost:3001) and connects to your Convex dev deployment.
 
+Seed the launch venues once per deployment. Without them the calendar court select and the `/find` venue filter are empty. The seed is idempotent and skips venues that already exist:
+
+```bash
+cd packages/backend && npx convex run venues:seedFigueira
+```
+
 ### Scripts
 
 | Command | What it does |
