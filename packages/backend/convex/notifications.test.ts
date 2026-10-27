@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
+import { getProfileForUser } from "./model/auth";
 import { createNotification } from "./model/notifications";
 import { ban, createUser, HOUR, setup, type TestUser, tomorrow10 } from "./test.helpers";
 
@@ -112,6 +113,62 @@ describe("notifications", () => {
     await t.run(async (ctx) => ctx.db.delete("users", gone.userId));
 
     expect(await unreadTypes(me)).toEqual(ALL_TYPES);
+  });
+
+  it("hides request notifications about a player whose profile was deleted, like /requests", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const gone = await createUser(t);
+    const other = await createUser(t);
+    await notesFrom(gone, me);
+    await notesFrom(other, me);
+
+    await t.run(async (ctx) => {
+      const profile = await getProfileForUser(ctx, gone.userId);
+      await ctx.db.delete("profiles", profile!._id);
+    });
+
+    // The chat still shows with a "deleted player", so its notifications stay.
+    expect(await unreadTypes(me)).toEqual([...ALL_TYPES, "new_message", "request_accepted"].sort());
+    expect(await me.as.query(api.matchRequests.received, {})).toHaveLength(1);
+    expect(await me.as.query(api.conversations.list, {})).toHaveLength(2);
+  });
+
+  it("hides request notifications about a player whose users row and profile were deleted", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const gone = await createUser(t);
+    await notesFrom(gone, me);
+
+    await t.run(async (ctx) => {
+      const profile = await getProfileForUser(ctx, gone.userId);
+      await ctx.db.delete("profiles", profile!._id);
+      await ctx.db.delete("users", gone.userId);
+    });
+
+    expect(await unreadTypes(me)).toEqual(["new_message", "request_accepted"]);
+  });
+
+  it("markAllRead still marks the notifications hidden for a deleted player", async () => {
+    const t = setup();
+    const me = await createUser(t);
+    const gone = await createUser(t);
+    await notesFrom(gone, me);
+    await t.run(async (ctx) => {
+      const profile = await getProfileForUser(ctx, gone.userId);
+      await ctx.db.delete("profiles", profile!._id);
+    });
+
+    await me.as.mutation(api.notifications.markAllRead, {});
+
+    const rows = await t.run(async (ctx) =>
+      ctx.db
+        .query("notifications")
+        .withIndex("by_userId", (q) => q.eq("userId", me.userId))
+        .collect(),
+    );
+    expect(rows).toHaveLength(4);
+    expect(rows.every((n) => n.readAt !== undefined)).toBe(true);
   });
 
   it("still returns up to 50 visible notifications when newer hidden ones fill the window", async () => {
