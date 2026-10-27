@@ -128,8 +128,8 @@ describe("notifications", () => {
       await ctx.db.delete("profiles", profile!._id);
     });
 
-    // The chat still shows with a "deleted player", so its notifications stay.
-    expect(await unreadTypes(me)).toEqual([...ALL_TYPES, "new_message", "request_accepted"].sort());
+    // The chat still shows with a "deleted player", so its message notification stays.
+    expect(await unreadTypes(me)).toEqual([...ALL_TYPES, "new_message"].sort());
     expect(await me.as.query(api.matchRequests.received, {})).toHaveLength(1);
     expect(await me.as.query(api.conversations.list, {})).toHaveLength(2);
   });
@@ -146,7 +146,7 @@ describe("notifications", () => {
       await ctx.db.delete("users", gone.userId);
     });
 
-    expect(await unreadTypes(me)).toEqual(["new_message", "request_accepted"]);
+    expect(await unreadTypes(me)).toEqual(["new_message"]);
   });
 
   it("markAllRead still marks the notifications hidden for a deleted player", async () => {

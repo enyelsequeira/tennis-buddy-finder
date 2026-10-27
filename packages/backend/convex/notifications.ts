@@ -34,22 +34,22 @@ export const unread = userQuery({
     const me = ctx.user;
     const rows = await unreadNotifications(ctx, me._id, MAX_UNREAD_SCANNED);
     // Rows about a banned or blocked player are not shown, as their request or chat looks
-    // like it does not exist. Rows linking to /requests about a player without a profile
-    // are not shown either, as /requests drops those requests (chats keep a "deleted
-    // player"). They stay unread and come back if that changes, unless `markAllRead`
-    // swept them meanwhile.
+    // like it does not exist. Rows about a request of a player without a profile are not
+    // shown either: /requests drops those requests and they count toward its dot. Chat rows
+    // stay, as the chat keeps a "deleted player". Hidden rows stay unread and come back if
+    // that changes, unless `markAllRead` swept them meanwhile.
     const hidden = new Map<string, boolean>();
     const visible = [];
     for (const row of rows) {
       const counterpart = await counterpartOf(ctx, row);
       if (counterpart) {
-        const linksToRequests = row.conversationId === undefined;
-        const key = `${counterpart}:${linksToRequests}`;
+        const aboutRequest = row.requestId !== undefined;
+        const key = `${counterpart}:${aboutRequest}`;
         if (!hidden.has(key)) {
           hidden.set(
             key,
             (await isHiddenFrom(ctx, me._id, counterpart)) ||
-              (linksToRequests && !(await getProfileForUser(ctx, counterpart))),
+              (aboutRequest && !(await getProfileForUser(ctx, counterpart))),
           );
         }
         if (hidden.get(key)) continue;
