@@ -17,7 +17,8 @@ const unread = computed(() => props.conversation.unreadCount);
 const preview = computed(() => {
   const last = props.conversation.lastMessage;
   if (!last) return t("chat.noMessagesYet");
-  return last.mine ? t("chat.you", { body: last.body }) : last.body;
+  // An empty body is a message whose sender deleted their account.
+  return last.mine ? t("chat.you", { body: last.body }) : last.body || t("chat.messageDeleted");
 });
 
 const stamp = computed(() =>

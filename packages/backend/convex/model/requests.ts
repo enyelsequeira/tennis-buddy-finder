@@ -50,6 +50,29 @@ export async function declinePendingForSlot(ctx: MutationCtx, options: DeclineOp
   }
 }
 
+/** Cancels an open or matched slot: pending requests are declined and a matched partner is told. */
+export async function cancelSlot(ctx: MutationCtx, slot: Doc<"availabilitySlots">) {
+  await declinePendingForSlot(ctx, { slotId: slot._id });
+  if (slot.status === "matched") {
+    const accepted = await ctx.db
+      .query("matchRequests")
+      .withIndex("by_slotId_and_status", (q) => q.eq("slotId", slot._id).eq("status", "accepted"))
+      .unique();
+    if (accepted) {
+      await ctx.db.patch("matchRequests", accepted._id, {
+        status: "cancelled",
+        respondedAt: Date.now(),
+      });
+      await createNotification(ctx, {
+        userId: accepted.fromUserId,
+        type: "request_declined",
+        requestId: accepted._id,
+      });
+    }
+  }
+  await ctx.db.patch("availabilitySlots", slot._id, { status: "cancelled" });
+}
+
 /** Cancels pending requests between two users in both directions, without notifying anyone. */
 export async function cancelPendingBetween(ctx: MutationCtx, pair: Pair) {
   const respondedAt = Date.now();

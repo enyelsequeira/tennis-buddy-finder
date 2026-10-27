@@ -504,6 +504,7 @@
     "you": "You: {body}",
     "noMessagesYet": "No messages yet",
     "deletedPlayer": "Deleted player",
+    "messageDeleted": "Message deleted",
     "unreadCount": "{count} unread message | {count} unread message | {count} unread messages",
     "emptyTitle": "You have no conversations yet.",
     "emptyDescription": "When a request to play is accepted, the chat opens here.",

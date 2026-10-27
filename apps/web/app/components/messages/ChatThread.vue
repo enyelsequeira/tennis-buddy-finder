@@ -58,7 +58,9 @@ const items = computed(() =>
   messages.value.map((message, index) => {
     const previous = messages.value[index - 1];
     const newDay = !previous || !isSameDay(previous._creationTime, message._creationTime);
-    return { ...message, dayLabel: newDay ? formatDayLabel(message._creationTime) : null };
+    // An empty body is a message whose sender deleted their account.
+    const body = message.body || t("chat.messageDeleted");
+    return { ...message, body, dayLabel: newDay ? formatDayLabel(message._creationTime) : null };
   }),
 );
 
