@@ -158,12 +158,22 @@ export const mine = profileQuery({
   ),
   handler: async (ctx, args) => {
     const { user } = ctx;
-    const slots = await ctx.db
-      .query("availabilitySlots")
-      .withIndex("by_userId_and_startAt", (q) =>
-        q.eq("userId", user._id).gte("startAt", args.from).lt("startAt", args.to),
-      )
-      .take(MAX_SLOTS_PER_QUERY);
+    // Per status, so cancelled rows can't push live slots past the `take()` limit.
+    const perStatus = await Promise.all(
+      [...LIVE_SLOT_STATUSES, "cancelled" as const].map((status) =>
+        ctx.db
+          .query("availabilitySlots")
+          .withIndex("by_userId_and_status_and_startAt", (q) =>
+            q
+              .eq("userId", user._id)
+              .eq("status", status)
+              .gte("startAt", args.from)
+              .lt("startAt", args.to),
+          )
+          .take(MAX_SLOTS_PER_QUERY),
+      ),
+    );
+    const slots = perStatus.flat().sort((a, b) => a.startAt - b.startAt);
     async function loadPartner(slot: Doc<"availabilitySlots">) {
       if (slot.status !== "matched") return undefined;
       const accepted = await ctx.db

@@ -351,6 +351,17 @@ describe("availability.mine", () => {
     expect(mine.map((s) => s.startAt)).toEqual([tomorrow10, tomorrow10 + 2 * DAY]);
   });
 
+  it("returns my live slots behind more cancelled slots than one take() returns", async () => {
+    const t = setup();
+    const a = await createUser(t);
+    await insertCancelledFlood(t, a.userId, NOW + HOUR);
+    await createSlot(a, tomorrow10);
+    const mine = await a.as.query(api.availability.mine, week);
+    expect(mine.filter((s) => s.status !== "cancelled").map((s) => s.startAt)).toEqual([
+      tomorrow10,
+    ]);
+  });
+
   it("names the accepted partner on my matched slots only, unless they are hidden from me", async () => {
     const t = setup();
     const owner = await createUser(t);
