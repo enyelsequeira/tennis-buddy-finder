@@ -21,6 +21,8 @@ const daysWith = (status: "open" | "matched") =>
   );
 const openDays = computed(() => daysWith("open"));
 const matchedDays = computed(() => daysWith("matched"));
+// A stable value: a fresh date object on every render makes the calendar jump back to its month.
+const selected = computed(() => toCalendarDate(props.day));
 </script>
 
 <template>
@@ -34,7 +36,7 @@ const matchedDays = computed(() => daysWith("matched"));
     :calendar-label="t('pages.calendar.title')"
     :year-controls="false"
     :view-control="false"
-    :model-value="toCalendarDate(day)"
+    :model-value="selected"
     :default-placeholder="toCalendarDate(month)"
     :min-value="toCalendarDate(now())"
     :ui="{
