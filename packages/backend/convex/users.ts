@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { internalMutation } from "./_generated/server";
 import { getProfileForUser, userMutation, userQuery } from "./model/auth";
-import { createUserFromAuth } from "./model/users";
+import { createUserFromAuth, deleteAccountData as deleteAccountDataBatch } from "./model/users";
 import schema from "./schema";
 
 export const me = userQuery({
@@ -42,4 +42,14 @@ export const internalCreateFromAuth = internalMutation({
   },
   returns: v.id("users"),
   handler: async (ctx, args) => createUserFromAuth(ctx, args),
+});
+
+/** Next batch of `deleteAccountData`, scheduled until the deleted account has nothing left. */
+export const deleteAccountData = internalMutation({
+  args: { userId: v.id("users") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await deleteAccountDataBatch(ctx, args.userId);
+    return null;
+  },
 });

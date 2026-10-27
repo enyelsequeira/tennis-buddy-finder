@@ -504,6 +504,7 @@
     "you": "Tu: {body}",
     "noMessagesYet": "Ainda sem mensagens",
     "deletedPlayer": "Jogador removido",
+    "messageDeleted": "Mensagem apagada",
     "unreadCount": "{count} mensagem por ler | {count} mensagem por ler | {count} mensagens por ler",
     "emptyTitle": "Ainda não tens conversas.",
     "emptyDescription": "Quando um pedido para jogar é aceite, a conversa abre aqui.",

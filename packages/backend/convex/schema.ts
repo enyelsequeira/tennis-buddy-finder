@@ -50,7 +50,9 @@ export default defineSchema({
   avatarUploads: defineTable({
     userId: v.id("users"),
     storageId: v.id("_storage"),
-  }).index("by_storageId", ["storageId"]),
+  })
+    .index("by_storageId", ["storageId"])
+    .index("by_userId", ["userId"]),
 
   venues: defineTable({
     name: v.string(),

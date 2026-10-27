@@ -5,7 +5,7 @@ import { betterAuth } from "better-auth/minimal";
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import authConfig from "./auth.config";
-import { createUserFromAuth, getUserByAuthId } from "./model/users";
+import { createUserFromAuth, deleteAccountData, getUserByAuthId } from "./model/users";
 
 // Typed explicitly to break the type cycle between `internal.auth` and the
 // trigger exports below.
@@ -44,12 +44,10 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
         });
       },
       onDelete: async (ctx, doc) => {
-        // Only the mirrored `users` row is removed here. The full cascade
-        // (profile, slots, requests, messages, ...) is driven by the app-side
-        // account deletion mutation in a later plan.
         const user = await getUserByAuthId(ctx, doc._id);
         if (!user) return;
         await ctx.db.delete("users", user._id);
+        await deleteAccountData(ctx, user._id);
       },
     },
   },

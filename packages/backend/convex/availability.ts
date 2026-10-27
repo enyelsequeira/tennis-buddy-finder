@@ -5,9 +5,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { getProfileForUser, profileMutation, profileQuery, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { fail } from "./model/errors";
-import { createNotification } from "./model/notifications";
 import { playerCard, toPlayerCard } from "./model/playerCard";
-import { declinePendingForSlot } from "./model/requests";
+import { cancelSlot, declinePendingForSlot } from "./model/requests";
 import { addLisbonDays, DAY, isOnSlotGrid, MAX_SLOT_MS } from "./model/time";
 import { formatsValidator, paginated } from "./model/validators";
 import schema from "./schema";
@@ -126,25 +125,7 @@ export const cancel = profileMutation({
   handler: async (ctx, args) => {
     const slot = await getOwnSlot(ctx, ctx.user._id, args.slotId);
     if (slot.status !== "open" && slot.status !== "matched") fail("SLOT_NOT_OPEN");
-    await declinePendingForSlot(ctx, { slotId: slot._id });
-    if (slot.status === "matched") {
-      const accepted = await ctx.db
-        .query("matchRequests")
-        .withIndex("by_slotId_and_status", (q) => q.eq("slotId", slot._id).eq("status", "accepted"))
-        .unique();
-      if (accepted) {
-        await ctx.db.patch("matchRequests", accepted._id, {
-          status: "cancelled",
-          respondedAt: Date.now(),
-        });
-        await createNotification(ctx, {
-          userId: accepted.fromUserId,
-          type: "request_declined",
-          requestId: accepted._id,
-        });
-      }
-    }
-    await ctx.db.patch("availabilitySlots", slot._id, { status: "cancelled" });
+    await cancelSlot(ctx, slot);
     return null;
   },
 });
