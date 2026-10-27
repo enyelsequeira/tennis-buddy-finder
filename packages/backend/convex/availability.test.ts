@@ -297,6 +297,7 @@ describe("availability.remove / cancel", () => {
       Promise.all(requests.map((id) => ctx.db.get("matchRequests", id))),
     );
     expect(rows.map((r) => r?.status)).toEqual(["declined", "declined"]);
+    expect(rows.map((r) => r?.reason)).toEqual([undefined, undefined]);
     const notes = await asker.as.query(api.notifications.unread, {});
     expect(notes.map((n) => n.type)).toEqual(["request_declined", "request_declined"]);
   });

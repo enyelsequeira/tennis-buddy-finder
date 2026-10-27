@@ -77,6 +77,9 @@
       "declined": "Recusado",
       "cancelled": "Cancelado"
     },
+    "reason": {
+      "slot_taken": "Horário preenchido"
+    },
     "tabs": {
       "received": "Recebidos",
       "receivedCount": "Recebidos · {count}",
@@ -351,6 +354,7 @@
       "request_received": "Tens um novo pedido para jogar.",
       "request_accepted": "O teu pedido para jogar foi aceite.",
       "request_declined": "O teu pedido para jogar foi recusado.",
+      "slot_taken": "O horário que pediste foi preenchido por outro jogador.",
       "new_message": "Tens uma mensagem nova."
     }
   },

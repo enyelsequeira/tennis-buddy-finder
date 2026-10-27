@@ -117,7 +117,11 @@ export const accept = profileMutation({
       conversationId,
     });
     await ctx.db.patch("availabilitySlots", slot._id, { status: "matched" });
-    await declinePendingForSlot(ctx, { slotId: slot._id, except: request._id });
+    await declinePendingForSlot(ctx, {
+      slotId: slot._id,
+      except: request._id,
+      reason: "slot_taken",
+    });
     // Drops the owner's now handled request_received before notifying the requester.
     await deleteRequestNotifications(ctx, request._id);
     await createNotification(ctx, {

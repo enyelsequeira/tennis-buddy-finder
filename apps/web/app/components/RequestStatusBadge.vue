@@ -3,7 +3,7 @@ import type { BadgeProps } from "@nuxt/ui";
 
 type RequestStatus = "pending" | "accepted" | "declined" | "cancelled";
 
-const props = defineProps<{ status: RequestStatus }>();
+const props = defineProps<{ status: RequestStatus; reason?: "slot_taken" }>();
 
 const { t } = useI18n();
 
@@ -19,7 +19,7 @@ const color = computed(() => COLORS[props.status]);
 
 <template>
   <UBadge
-    :label="t(`request.status.${status}`)"
+    :label="t(reason ? `request.reason.${reason}` : `request.status.${status}`)"
     :color="color"
     variant="soft"
     size="sm"

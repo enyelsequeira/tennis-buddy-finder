@@ -7,16 +7,23 @@ import { createNotification, deleteRequestNotifications } from "./notifications"
 
 const MAX_PENDING = 100;
 
-export async function declineRequest(ctx: MutationCtx, request: Doc<"matchRequests">) {
+type DeclineReason = Doc<"matchRequests">["reason"];
+
+export async function declineRequest(
+  ctx: MutationCtx,
+  request: Doc<"matchRequests">,
+  reason?: DeclineReason,
+) {
   await ctx.db.patch("matchRequests", request._id, {
     status: "declined",
+    reason,
     respondedAt: Date.now(),
   });
   // A pending request only has the owner's request_received, which is now dead.
   await deleteRequestNotifications(ctx, request._id);
   await createNotification(ctx, {
     userId: request.fromUserId,
-    type: "request_declined",
+    type: reason === "slot_taken" ? "slot_taken" : "request_declined",
     requestId: request._id,
   });
 }
@@ -36,7 +43,11 @@ export async function latestRequest(
     .first();
 }
 
-type DeclineOptions = { slotId: Id<"availabilitySlots">; except?: Id<"matchRequests"> };
+type DeclineOptions = {
+  slotId: Id<"availabilitySlots">;
+  except?: Id<"matchRequests">;
+  reason?: DeclineReason;
+};
 
 export async function declinePendingForSlot(ctx: MutationCtx, options: DeclineOptions) {
   const pending = await ctx.db
@@ -46,7 +57,7 @@ export async function declinePendingForSlot(ctx: MutationCtx, options: DeclineOp
     )
     .take(MAX_PENDING);
   for (const request of pending) {
-    if (request._id !== options.except) await declineRequest(ctx, request);
+    if (request._id !== options.except) await declineRequest(ctx, request, options.reason);
   }
 }
 
