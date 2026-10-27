@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
-import type { Doc, Id } from "./_generated/dataModel";
-import { userMutation, userQuery, type Ctx } from "./model/auth";
+import type { Doc } from "./_generated/dataModel";
+import { getProfileForUser, userMutation, userQuery, type Ctx } from "./model/auth";
 import { isHiddenFrom } from "./model/blocks";
 import { otherMemberId } from "./model/conversations";
 import { fail } from "./model/errors";
@@ -34,17 +34,25 @@ export const unread = userQuery({
     const me = ctx.user;
     const rows = await unreadNotifications(ctx, me._id, MAX_UNREAD_SCANNED);
     // Rows about a banned or blocked player are not shown, as their request or chat looks
-    // like it does not exist. They stay unread and come back if that changes, unless
-    // `markAllRead` swept them meanwhile.
-    const hidden = new Map<Id<"users">, boolean>();
+    // like it does not exist. Rows about a request of a player without a profile are not
+    // shown either: /requests drops those requests and they count toward its dot. Chat rows
+    // stay, as the chat keeps a "deleted player". Hidden rows stay unread and come back if
+    // that changes, unless `markAllRead` swept them meanwhile.
+    const hidden = new Map<string, boolean>();
     const visible = [];
     for (const row of rows) {
       const counterpart = await counterpartOf(ctx, row);
       if (counterpart) {
-        if (!hidden.has(counterpart)) {
-          hidden.set(counterpart, await isHiddenFrom(ctx, me._id, counterpart));
+        const aboutRequest = row.requestId !== undefined;
+        const key = `${counterpart}:${aboutRequest}`;
+        if (!hidden.has(key)) {
+          hidden.set(
+            key,
+            (await isHiddenFrom(ctx, me._id, counterpart)) ||
+              (aboutRequest && !(await getProfileForUser(ctx, counterpart))),
+          );
         }
-        if (hidden.get(counterpart)) continue;
+        if (hidden.get(key)) continue;
       }
       visible.push(row);
       if (visible.length === MAX_UNREAD) break;
