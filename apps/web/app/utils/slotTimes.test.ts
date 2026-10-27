@@ -1,7 +1,7 @@
 import { HOUR } from "@tennis-buddy-finder/backend/convex/model/time";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import { useLisbonTime } from "../composables/useLisbonTime";
-import { latestEnd, slotPhase, timeLabel } from "./slotTimes";
+import { isUpcoming, latestEnd, slotPhase, timeLabel } from "./slotTimes";
 
 // useI18n is a Nuxt auto-import global; the composable only needs the locale and t.
 beforeAll(() => {
@@ -33,6 +33,16 @@ describe("slotPhase", () => {
     expect(slotPhase(slot, slot.startAt)).toBe("inProgress");
     expect(slotPhase(slot, slot.endAt - 1)).toBe("inProgress");
     expect(slotPhase(slot, slot.endAt)).toBe("finished");
+  });
+});
+
+describe("isUpcoming", () => {
+  const slot = { startAt: Date.UTC(2026, 8, 10, 9), endAt: Date.UTC(2026, 8, 10, 10) };
+
+  test("keeps a slot until its start and drops it from exactly the start", () => {
+    expect(isUpcoming(slot, slot.startAt - 1)).toBe(true);
+    expect(isUpcoming(slot, slot.startAt)).toBe(false);
+    expect(isUpcoming(slot, slot.endAt)).toBe(false);
   });
 });
 

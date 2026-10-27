@@ -62,12 +62,15 @@ const {
   isPending: slotsPending,
 } = useAuthedQuery(api.availability.listOpenForUser, () => ({ userId: props.userId }));
 const { data: venues } = useAuthedQuery(api.venues.list);
+// The query only re-runs when data changes, so drop slots that started since on a ticking clock.
+const now = useTimestamp({ interval: 30_000 });
 
 const slotDays = computed(() => {
   const player = profile.value;
   if (!player) return [];
   const map = new Map<number, OpenSlot[]>();
   for (const slot of openSlots.value ?? []) {
+    if (!isUpcoming(slot, now.value)) continue;
     const day = startOfDay(slot.startAt);
     map.set(day, [...(map.get(day) ?? []), toOpenSlot({ slot, player, venues: venues.value })]);
   }
