@@ -355,6 +355,7 @@
       "request_accepted": "Your request to play was accepted.",
       "request_declined": "Your request to play was declined.",
       "slot_taken": "The slot you asked for was taken by another player.",
+      "match_cancelled": "Your match was cancelled.",
       "new_message": "You have a new message."
     }
   },

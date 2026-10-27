@@ -379,8 +379,25 @@ describe("availability.remove / cancel", () => {
     const request = await t.run(async (ctx) => ctx.db.get("matchRequests", requestId));
     expect(request?.status).toBe("cancelled");
     const notes = await asker.as.query(api.notifications.unread, {});
-    expect(notes.map((n) => n.type)).toEqual(["request_declined", "request_accepted"]);
+    expect(notes.map((n) => n.type)).toEqual(["match_cancelled", "request_accepted"]);
     expect(notes[0]?.requestId).toBe(requestId);
+  });
+
+  it("cancelling a matched slot tells the partner the match was cancelled, not declined", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const partner = await createUser(t);
+    const slotId = await createSlot(owner, tomorrow10);
+    const requestId = await partner.as.mutation(api.matchRequests.send, { slotId });
+    await owner.as.mutation(api.matchRequests.accept, { requestId });
+    await owner.as.mutation(api.availability.cancel, { slotId });
+    const notes = await partner.as.query(api.notifications.unread, {});
+    expect(notes.filter((n) => n.requestId === requestId).map((n) => n.type)).toEqual([
+      "match_cancelled",
+      "request_accepted",
+    ]);
+    const sent = await partner.as.query(api.matchRequests.sent, {});
+    expect(sent.map((r) => [r.request._id, r.request.status])).toEqual([[requestId, "cancelled"]]);
   });
 });
 

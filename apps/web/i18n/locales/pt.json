@@ -355,6 +355,7 @@
       "request_accepted": "O teu pedido para jogar foi aceite.",
       "request_declined": "O teu pedido para jogar foi recusado.",
       "slot_taken": "O horário que pediste foi preenchido por outro jogador.",
+      "match_cancelled": "O jogo que tinhas marcado foi cancelado.",
       "new_message": "Tens uma mensagem nova."
     }
   },

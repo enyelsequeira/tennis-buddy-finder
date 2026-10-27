@@ -76,7 +76,7 @@ export async function cancelSlot(ctx: MutationCtx, slot: Doc<"availabilitySlots"
       });
       await createNotification(ctx, {
         userId: accepted.fromUserId,
-        type: "request_declined",
+        type: "match_cancelled",
         requestId: accepted._id,
       });
     }
