@@ -114,7 +114,13 @@ export const remove = profileMutation({
     const slot = await getOwnSlot(ctx, ctx.user._id, args.slotId);
     if (slot.status !== "open") fail("SLOT_NOT_OPEN");
     await declinePendingForSlot(ctx, { slotId: slot._id });
-    await ctx.db.delete("availabilitySlots", slot._id);
+    const requested = await ctx.db
+      .query("matchRequests")
+      .withIndex("by_slotId_and_status", (q) => q.eq("slotId", slot._id))
+      .first();
+    // Requesters' cards and notifications point at the slot, so a requested one is only cancelled.
+    if (requested) await ctx.db.patch("availabilitySlots", slot._id, { status: "cancelled" });
+    else await ctx.db.delete("availabilitySlots", slot._id);
     return null;
   },
 });

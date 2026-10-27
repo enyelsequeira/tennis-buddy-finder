@@ -318,6 +318,51 @@ describe("availability.remove / cancel", () => {
     expect(notes.map((n) => [n.type, n.requestId])).toEqual([["request_received", live]]);
   });
 
+  it("removing a requested slot keeps it cancelled so the requester still sees the declined request", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const asker = await createUser(t);
+    const slotId = await createSlot(owner, tomorrow10);
+    const requestId = await asker.as.mutation(api.matchRequests.send, { slotId });
+    await owner.as.mutation(api.availability.remove, { slotId });
+    const sent = await asker.as.query(api.matchRequests.sent, {});
+    expect(sent.map((v) => [v.request._id, v.request.status, v.slot._id, v.slot.startAt])).toEqual([
+      [requestId, "declined", slotId, tomorrow10],
+    ]);
+  });
+
+  it("a removed requested slot frees its time, leaves search and can't be removed or cancelled again", async () => {
+    const t = setup();
+    const owner = await createUser(t);
+    const asker = await createUser(t);
+    const slotId = await createSlot(owner, tomorrow10);
+    const requestId = await asker.as.mutation(api.matchRequests.send, { slotId });
+    await owner.as.mutation(api.availability.remove, { slotId });
+    expect((await owner.as.query(api.availability.mine, week)).map((s) => s.status)).toEqual([
+      "cancelled",
+    ]);
+    expect(
+      await asker.as.query(api.availability.listOpenForUser, { userId: owner.userId }),
+    ).toEqual([]);
+    const found = await asker.as.query(api.availability.search, {
+      ...week,
+      minNtrp: 1,
+      maxNtrp: 7,
+      paginationOpts: page,
+    });
+    expect(found.page).toEqual([]);
+    expect(await owner.as.query(api.notifications.unread, {})).toEqual([]);
+    const notes = await asker.as.query(api.notifications.unread, {});
+    expect(notes.map((n) => [n.type, n.requestId])).toEqual([["request_declined", requestId]]);
+    await expect(owner.as.mutation(api.availability.remove, { slotId })).rejects.toThrow(
+      "SLOT_NOT_OPEN",
+    );
+    await expect(owner.as.mutation(api.availability.cancel, { slotId })).rejects.toThrow(
+      "SLOT_NOT_OPEN",
+    );
+    await expect(createSlot(owner, tomorrow10)).resolves.toBeDefined();
+  });
+
   it("a matched slot cannot be removed; cancelling it cancels the accepted request and notifies", async () => {
     const t = setup();
     const owner = await createUser(t);
